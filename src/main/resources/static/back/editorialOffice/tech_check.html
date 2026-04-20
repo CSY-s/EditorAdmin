@@ -1,0 +1,1349 @@
+<!-- src/main/resources/static/back/editorialOffice/tech_check.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>形式审查 - 编辑部管理员</title>
+    <!-- 改用CDN加载Bootstrap CSS，避免本地路径问题 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/editorial-office.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* 格式问题样式 */
+        .format-issue {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-left: 4px solid #dc3545;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .format-issue.critical {
+            border-left-color: #dc3545;
+            background-color: #ffe6e6;
+        }
+        
+        .format-issue.high {
+            border-left-color: #fd7e14;
+            background-color: #fff3cd;
+        }
+        
+        .format-issue.medium {
+            border-left-color: #ffc107;
+            background-color: #fff8e1;
+        }
+        
+        .format-issue.low {
+            border-left-color: #28a745;
+            background-color: #e7f5e7;
+        }
+        
+        /* 格式检查结果面板 */
+        .format-results {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        /* 问题统计 */
+        .issue-stats {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            flex: 1;
+            font-weight: bold;
+        }
+        
+        .stat-critical {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .stat-high {
+            background-color: #fd7e14;
+            color: white;
+        }
+        
+        .stat-medium {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .stat-low {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        /* 问题详情面板 */
+        .issue-detail {
+            font-size: 14px;
+        }
+        
+        .issue-severity {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+        
+        .severity-critical {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .severity-high {
+            background-color: #fd7e14;
+            color: white;
+        }
+        
+        .severity-medium {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .severity-low {
+            background-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <a href="/front/" style="position:fixed;right:24px;bottom:24px;z-index:1200;display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;background:#1f4f99;color:#fff;text-decoration:none;box-shadow:0 12px 24px rgba(31,79,153,.22);">
+        <i class="fas fa-globe"></i> 前台首页
+    </a>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div>
+                <h1><i class="fas fa-clipboard-check"></i> 稿件形式审查</h1>
+                <p class="mb-0">技术检查：格式、字数、查重率等</p>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <div>
+                    <div id="userName">编辑部管理员</div>
+                    <div class="btn-group">
+                        <a href="dashboard.html" class="btn btn-sm btn-light">
+                            <i class="fas fa-home"></i> 工作台
+                        </a>
+                        <button class="btn btn-sm btn-light" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="nav-menu">
+            <ul>
+                <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> 工作台</a></li>
+                <li><a href="tech_check.html" class="active"><i class="fas fa-clipboard-check"></i> 形式审查</a></li>
+                <li><a href="news_manage.html"><i class="fas fa-newspaper"></i> 新闻管理</a></li>
+                <li><a href="journal_notice.html"><i class="fas fa-bullhorn"></i> 公告管理</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> 系统设置</a></li>
+            </ul>
+        </nav>
+
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="refreshList()">
+                <i class="fas fa-sync-alt"></i> 刷新列表
+            </button>
+            <button class="btn btn-success" onclick="batchCheck()">
+                <i class="fas fa-check-double"></i> 批量通过
+            </button>
+            <button class="btn btn-warning" onclick="exportReport()">
+                <i class="fas fa-file-export"></i> 导出报告
+            </button>
+            <div class="ms-auto">
+                <input type="text" class="form-control" placeholder="搜索稿件ID或标题" 
+                       id="searchInput" onkeyup="searchManuscripts()" style="width: 300px;">
+            </div>
+        </div>
+
+        <!-- 待审查稿件列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-list"></i> 待审查稿件列表</h3>
+                <small class="text-muted">共 <span id="totalCount">0</span> 篇稿件需要审查</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="manuscriptTable">
+                        <thead>
+                            <tr>
+                                <th width="50"><input type="checkbox" id="selectAll"></th>
+                                <th width="120">稿件ID</th>
+                                <th>标题</th>
+                                <th width="120">提交时间</th>
+                                <th width="100">作者</th>
+                                <th width="120">状态</th>
+                                <th width="180">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="manuscriptList">
+                            <!-- 动态加载稿件列表 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 分页 -->
+                <nav aria-label="Page navigation" class="mt-3">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- 动态生成分页 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- 统计信息（修改为一行展示：待审查/已通过/未通过） -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                        <h4 id="pendingCount">0</h4>
+                        <p class="text-muted mb-0">待审查</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <h4 id="passedCount">0</h4>
+                        <p class="text-muted mb-0">已通过</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                        <h4 id="failedCount">0</h4>
+                        <p class="text-muted mb-0">未通过</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 审查详情模态框 -->
+    <div class="modal fade" id="checkDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">稿件形式审查 - <span id="modalMsId"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- 左侧：稿件信息 -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-info-circle"></i> 稿件基本信息</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <th width="120">稿件ID:</th>
+                                            <td id="detailMsId">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>标题:</th>
+                                            <td id="detailTitle">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>提交作者:</th>
+                                            <td id="detailAuthor">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>提交时间:</th>
+                                            <td id="detailSubmitTime">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>稿件字数:</th>
+                                            <td><span id="detailWordCount">0</span> 字</td>
+                                        </tr>
+                                        <tr>
+                                            <th>文件大小:</th>
+                                            <td><span id="detailFileSize">0</span> KB</td>
+                                        </tr>
+                                        <tr>
+                                            <th>格式得分:</th>
+                                            <td><span id="formatScore">0</span> / 100</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- 文件下载 -->
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-file-download"></i> 文件下载</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" onclick="downloadFile('manuscript')">
+                                            <i class="fas fa-file-pdf"></i> 下载稿件(PDF)
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="downloadFile('coverletter')">
+                                            <i class="fas fa-file-word"></i> 下载投稿信
+                                        </button>
+                                        <button class="btn btn-outline-info" onclick="previewOnline()">
+                                            <i class="fas fa-eye"></i> 在线预览
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：审查项目 -->
+                        <div class="col-md-6">
+                            <form id="checkForm">
+                                <!-- 字数检查 -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6><i class="fas fa-file-word"></i> 字数检查</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            当前字数: <span id="currentWordCount" class="badge bg-info">0</span>
+                                            | 限制: <span class="badge bg-secondary">5000-8000字</span>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="wordCountPass">
+                                            <label class="form-check-label" for="wordCountPass">
+                                                字数符合要求 (5000-8000字)
+                                            </label>
+                                        </div>
+                                        <textarea class="form-control mt-2" id="wordCountComment" 
+                                                  rows="2" placeholder="字数问题备注（如有）"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 格式检查 -->
+                                <div class="card mb-3">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6><i class="fas fa-format"></i> 格式检查</h6>
+                                        <div id="formatStats"></div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- 问题统计 -->
+                                        <div class="issue-stats" id="formatIssueStats" style="display: none;">
+                                            <div class="stat-item stat-critical">
+                                                <div>严重</div>
+                                                <div id="criticalCount">0</div>
+                                            </div>
+                                            <div class="stat-item stat-high">
+                                                <div>重要</div>
+                                                <div id="highCount">0</div>
+                                            </div>
+                                            <div class="stat-item stat-medium">
+                                                <div>一般</div>
+                                                <div id="mediumCount">0</div>
+                                            </div>
+                                            <div class="stat-item stat-low">
+                                                <div>轻微</div>
+                                                <div id="lowCount">0</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 格式问题列表 -->
+                                        <div class="format-results" id="formatIssuesContainer" style="display: none;">
+                                            <div class="issue-detail" id="formatIssuesList">
+                                                <!-- 格式问题将在这里动态生成 -->
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 原有格式检查项 -->
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="formatTitle">
+                                                    <label class="form-check-label">标题页完整</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="formatAbstract">
+                                                    <label class="form-check-label">摘要格式正确</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="formatKeywords">
+                                                    <label class="form-check-label">关键词格式正确</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="formatReference">
+                                                    <label class="form-check-label">参考文献格式</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="formatFigure">
+                                                    <label class="form-check-label">图表格式正确</label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="formatLayout">
+                                                    <label class="form-check-label">页面布局规范</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <textarea class="form-control mt-2" id="formatComment" 
+                                                  rows="3" placeholder="格式问题备注"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 查重检查 -->
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6><i class="fas fa-search"></i> 查重检查</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                onclick="runPlagiarismCheck()">
+                                            <i class="fas fa-play"></i> 运行查重
+                                        </button>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label>查重率: <span id="similarityRate" class="badge">0%</span></label>
+                                            <div class="progress">
+                                                <div class="progress-bar" id="similarityBar" 
+                                                     style="width: 0%;"></div>
+                                            </div>
+                                            <small class="text-muted">要求：≤ 20%</small>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="plagiarismPass">
+                                            <label class="form-check-label">
+                                                查重率符合要求 (≤ 20%)
+                                            </label>
+                                        </div>
+                                        <textarea class="form-control mt-2" id="plagiarismComment" 
+                                                  rows="2" placeholder="查重问题备注"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 综合审查结果 -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6><i class="fas fa-clipboard-check"></i> 审查结果</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">审查结论</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="checkResult" 
+                                                       id="resultPass" value="pass" checked>
+                                                <label class="form-check-label text-success" for="resultPass">
+                                                    <i class="fas fa-check-circle"></i> 通过审查
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="checkResult" 
+                                                       id="resultFail" value="fail">
+                                                <label class="form-check-label text-danger" for="resultFail">
+                                                    <i class="fas fa-times-circle"></i> 退回修改
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="checkResult" 
+                                                       id="resultReject" value="reject">
+                                                <label class="form-check-label text-warning" for="resultReject">
+                                                    <i class="fas fa-ban"></i> 直接拒稿
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">审查意见</label>
+                                            <textarea class="form-control" id="finalComment" 
+                                                      rows="3" placeholder="填写详细的审查意见..." required></textarea>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="button" class="btn btn-success" onclick="submitCheckResult()">
+                                                <i class="fas fa-paper-plane"></i> 提交审查结果
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量操作确认模态框 -->
+    <div class="modal fade" id="batchConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">批量操作确认</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>确定要通过选中的 <span id="batchCount">0</span> 篇稿件吗？</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="batchAutoComment">
+                        <label class="form-check-label">自动生成通过意见</label>
+                    </div>
+                    <textarea class="form-control mt-2" id="batchComment" 
+                              rows="3" placeholder="批量操作备注（可选）"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-success" onclick="confirmBatchCheck()">确认通过</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+        let totalPages = 1;
+        let currentManuscriptId = '';
+        let selectedItems = new Set();
+
+        $(document).ready(function() {
+            loadManuscriptList();
+            initSelectAll();
+        });
+
+        // 初始化全选功能
+        function initSelectAll() {
+            $('#selectAll').change(function() {
+                const isChecked = $(this).prop('checked');
+                $('.item-checkbox').prop('checked', isChecked);
+                
+                selectedItems.clear();
+                if (isChecked) {
+                    // 获取当前页所有稿件ID
+                    $('#manuscriptList tr').each(function() {
+                        const msId = $(this).data('id');
+                        if (msId) selectedItems.add(msId);
+                    });
+                }
+                updateBatchButton();
+            });
+        }
+
+        // 加载稿件列表
+        function loadManuscriptList(page = 1) {
+		    const keyword = $('#searchInput').val().trim();
+		    
+		    $.ajax({
+		        url: '/editorial-office/tech-check/list',
+		        type: 'GET',
+		        data: {
+		            page: page,
+		            pageSize: pageSize,
+		            keyword: keyword
+		        },
+		        success: function(response) {
+		            console.log('API响应:', response); // 添加这行查看响应
+		            if (response.code === 200) {
+		                renderManuscriptTable(response.data.list);
+		                renderPagination(response.data.total);
+		                // 核心修复：设置总数，且不被后续逻辑覆盖
+		                $('#totalCount').text(response.data.total);
+		                // 仅更新统计卡片，不覆盖总数
+		                updateStatsWithoutTotal(); 
+		            } else {
+		                console.error('API返回错误:', response);
+		                // 显示错误信息
+		                renderManuscriptTable([]);
+		                $('#totalCount').text('0');
+		            }
+		        },
+		        error: function(xhr, status, error) {
+		            console.error('请求失败:', error);
+		            console.error('状态:', status);
+		            renderManuscriptTable([]);
+		            $('#totalCount').text('0');
+		        }
+		    });
+		}
+
+        // 渲染稿件表格
+        function renderManuscriptTable(data) {
+		    const tbody = $('#manuscriptList');
+		    tbody.empty();
+		    
+		    if (!data || data.length === 0) {
+		        tbody.append(`
+		            <tr>
+		                <td colspan="7" class="text-center py-4">
+		                    <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+		                    <p>暂无待审查稿件</p>
+		                </td>
+		            </tr>
+		        `);
+		        return;
+		    }
+		
+		    data.forEach(item => {
+		        const statusBadge = getStatusBadge(item.status);
+		        const authorInfo = item.authorName ? 
+		            `${item.authorName}${item.authorUnit ? ' - ' + item.authorUnit : ''}` : '未知作者';
+		        
+		        const row = `
+		            <tr data-id="${item.msId}">
+		                <td><input type="checkbox" class="item-checkbox" value="${item.msId}" 
+		                           onchange="updateSelection('${item.msId}', this.checked)"></td>
+		                <td><strong>${item.msId}</strong></td>
+		                <td>${item.title}</td>
+		                <td>${item.submitTime}</td>
+		                <td>${authorInfo}</td>
+		                <td>${statusBadge}</td>
+		                <td>
+		                    <button class="btn btn-sm btn-primary" onclick="showCheckDetail('${item.msId}')">
+		                        <i class="fas fa-clipboard-check"></i> 审查
+		                    </button>
+		                    <button class="btn btn-sm btn-info" onclick="viewManuscript('${item.msId}')">
+		                        <i class="fas fa-eye"></i> 预览
+		                    </button>
+		                    <button class="btn btn-sm btn-warning" onclick="unsubmitManuscript('${item.msId}')">
+		                        <i class="fas fa-undo"></i> 退回
+		                    </button>
+		                </td>
+		            </tr>
+		        `;
+		        tbody.append(row);
+		    });
+		}
+
+        // 获取状态标签 - 修复：匹配数据库的"待形式审查"状态
+        function getStatusBadge(status) {
+		    const badges = {
+		        'Submitted': 'badge bg-warning',           // 待审查（新）
+		        'Incomplete_Submission': 'badge bg-danger', // 退回修改（新）
+		        'AWAITING_EDITOR_ASSIGNMENT': 'badge bg-success', // 通过审查（新）
+		        'REJECTED': 'badge bg-dark',               // 拒稿（新）
+		        '待初审': 'badge bg-info',                  // 保留旧的（如果还有）
+		        '审查中': 'badge bg-secondary'
+		    };
+		    
+		    // 如果状态不在映射中，使用默认样式
+		    const badgeClass = badges[status] || 'badge bg-light text-dark';
+		    return `<span class="${badgeClass}">${status}</span>`;
+		}
+
+        // 更新选中项
+        function updateSelection(id, isChecked) {
+            if (isChecked) {
+                selectedItems.add(id);
+            } else {
+                selectedItems.delete(id);
+                $('#selectAll').prop('checked', false);
+            }
+            updateBatchButton();
+        }
+
+        // 更新批量操作按钮状态
+        function updateBatchButton() {
+            const count = selectedItems.size;
+            $('.batch-count').text(count);
+        }
+
+        // 渲染分页
+        function renderPagination(total) {
+            const pagination = $('#pagination');
+            pagination.empty();
+            
+            totalPages = Math.ceil(total / pageSize);
+            
+            if (totalPages <= 1) return;
+
+            // 上一页
+            const prevDisabled = currentPage === 1 ? 'disabled' : '';
+            pagination.append(`
+                <li class="page-item ${prevDisabled}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                const active = i === currentPage ? 'active' : '';
+                pagination.append(`
+                    <li class="page-item ${active}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>
+                `);
+            }
+
+            // 下一页
+            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+            pagination.append(`
+                <li class="page-item ${nextDisabled}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `);
+        }
+
+        // 切换页码
+        function changePage(page) {
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            loadManuscriptList(page);
+        }
+
+        // 优化：更新统计信息但不覆盖总数（删除了avgTime相关代码）
+        function updateStatsWithoutTotal() {
+		    $.ajax({
+		        url: '/editorial-office/tech-check/stats',
+		        type: 'GET',
+		        success: function(response) {
+		            console.log('统计响应:', response);
+		            if (response.code === 200) {
+		                const stats = response.data;
+		                // 只更新待审查/已通过/未通过，删除平均处理时间
+		                $('#pendingCount').text(stats.pending || 0);
+		                $('#passedCount').text(stats.passed || 0);
+		                $('#failedCount').text(stats.failed || 0);
+		            }
+		        },
+		        error: function() {
+		            console.error('获取统计失败');
+		        }
+		    });
+		}
+
+        // 运行查重检查
+        function runPlagiarismCheck() {
+            $('#similarityRate').html('<i class="fas fa-spinner fa-spin"></i> 检测中...');
+            
+            // 模拟查重过程
+            setTimeout(() => {
+                const similarity = Math.floor(Math.random() * 25);
+                $('#similarityRate').text(similarity + '%');
+                $('#similarityBar').css('width', similarity + '%');
+                
+                if (similarity <= 20) {
+                    $('#similarityBar').removeClass('bg-danger').addClass('bg-success');
+                    $('#plagiarismPass').prop('checked', true);
+                } else {
+                    $('#similarityBar').removeClass('bg-success').addClass('bg-danger');
+                    $('#plagiarismPass').prop('checked', false);
+                }
+            }, 2000);
+        }
+
+        // 下载文件
+        function downloadFile(type) {
+            alert(`开始下载${type === 'manuscript' ? '稿件' : '投稿信'}...`);
+            // 实际项目中这里应该是文件下载请求
+        }
+
+        // 在线预览
+        function previewOnline() {
+            alert('在线预览功能开发中...');
+        }
+
+        // 提交审查结果
+        function submitCheckResult() {
+		    const result = $('input[name="checkResult"]:checked').val();
+		    const comment = $('#finalComment').val();
+		    
+		    if (!comment.trim()) {
+		        alert('请填写审查意见');
+		        return;
+		    }
+		
+		    // 收集所有检查项
+		    const checkData = {
+		        msId: currentManuscriptId,
+		        result: result,
+		        comment: comment,
+		        wordCountPass: $('#wordCountPass').prop('checked'),
+		        formatIssues: getFormatIssues(),
+		        similarity: parseFloat($('#similarityRate').text().replace('%', '')),
+		        plagiarismPass: $('#plagiarismPass').prop('checked'),
+		        formatTitle: $('#formatTitle').prop('checked'),
+		        formatAbstract: $('#formatAbstract').prop('checked'),
+		        formatKeywords: $('#formatKeywords').prop('checked'),
+		        formatReference: $('#formatReference').prop('checked'),
+		        formatFigure: $('#formatFigure').prop('checked'),
+		        formatLayout: $('#formatLayout').prop('checked')
+		    };
+		
+		    $.ajax({
+		        url: '/editorial-office/tech-check/submit',
+		        type: 'POST',
+		        contentType: 'application/json',
+		        data: JSON.stringify(checkData),
+		        success: function(response) {
+		            if (response.code === 200) {
+		                alert('审查结果提交成功');
+		                $('#checkDetailModal').modal('hide');
+		                loadManuscriptList(currentPage);
+		                updateStatsWithoutTotal(); // 调用优化后的统计方法
+		            } else {
+		                alert('提交失败: ' + response.message);
+		            }
+		        },
+		        error: function(xhr) {
+		            alert('提交失败，请检查网络连接');
+		        }
+		    });
+		}
+
+        // 获取格式问题
+        function getFormatIssues() {
+            const issues = [];
+            if (!$('#formatTitle').prop('checked')) issues.push('标题页不完整');
+            if (!$('#formatAbstract').prop('checked')) issues.push('摘要格式错误');
+            if (!$('#formatKeywords').prop('checked')) issues.push('关键词格式错误');
+            if (!$('#formatReference').prop('checked')) issues.push('参考文献格式错误');
+            if (!$('#formatFigure').prop('checked')) issues.push('图表格式错误');
+            if (!$('#formatLayout').prop('checked')) issues.push('页面布局不规范');
+            return issues;
+        }
+
+        // 批量审查
+        function batchCheck() {
+            if (selectedItems.size === 0) {
+                alert('请先选择要操作的稿件');
+                return;
+            }
+            
+            $('#batchCount').text(selectedItems.size);
+            const modal = new bootstrap.Modal(document.getElementById('batchConfirmModal'));
+            modal.show();
+        }
+
+        // 确认批量操作
+        function confirmBatchCheck() {
+		    if (selectedItems.size === 0) {
+		        alert('请先选择稿件');
+		        return;
+		    }
+		    
+		    const comment = $('#batchComment').val();
+		    const autoComment = $('#batchAutoComment').prop('checked');
+		    
+		    const requestData = {
+		        msIds: Array.from(selectedItems),
+		        comment: comment || '批量审查通过',
+		        autoComment: autoComment
+		    };
+		    
+		    $.ajax({
+		        url: '/editorial-office/tech-check/batch-pass',
+		        type: 'POST',
+		        contentType: 'application/json',
+		        data: JSON.stringify(requestData),
+		        success: function(response) {
+		            if (response.code === 200) {
+		                alert(`批量通过 ${selectedItems.size} 篇稿件成功`);
+		                $('#batchConfirmModal').modal('hide');
+		                
+		                // 清除选中
+		                selectedItems.clear();
+		                $('.item-checkbox').prop('checked', false);
+		                $('#selectAll').prop('checked', false);
+		                updateBatchButton();
+		                
+		                // 刷新列表
+		                setTimeout(() => {
+		                    loadManuscriptList(currentPage);
+		                }, 500);
+		            } else {
+		                alert('批量操作失败: ' + response.message);
+		            }
+		        },
+		        error: function() {
+		            alert('批量操作失败，请重试');
+		        }
+		    });
+		}
+
+        // 查看稿件
+        function viewManuscript(msId) {
+            alert(`查看稿件: ${msId}`);
+        }
+
+        // 退回稿件
+        function unsubmitManuscript(msId) {
+		    const reason = prompt('请输入退回原因：');
+		    if (!reason) return;
+		    
+		    if (confirm(`确定要退回稿件 ${msId} 吗？`)) {
+		        $.ajax({
+		            url: '/editorial-office/tech-check/unsubmit/' + msId,
+		            type: 'POST',
+		            contentType: 'application/json',
+		            data: JSON.stringify({ reason: reason }),
+		            success: function(response) {
+		                if (response.code === 200) {
+		                    alert('稿件已退回给作者');
+		                    loadManuscriptList(currentPage);
+		                } else {
+		                    alert('操作失败: ' + response.message);
+		                }
+		            }
+		        });
+		    }
+		}
+
+        // 导出报告
+        function exportReport() {
+            alert('导出审查报告功能开发中...');
+        }
+
+        // 搜索稿件
+        function searchManuscripts() {
+            const keyword = $('#searchInput').val().trim();
+            if (keyword) {
+                // 实际搜索逻辑
+                loadManuscriptList(1);
+            }
+        }
+
+        // 刷新列表
+        function refreshList() {
+            loadManuscriptList(currentPage);
+            alert('列表已刷新');
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = '../../login.html';
+            }
+        }
+        
+        //显示详情
+        function showCheckDetail(msId) {
+            currentManuscriptId = msId;
+            
+            // 1. 获取稿件详情
+            $.ajax({
+                url: '/editorial-office/tech-check/detail/' + msId,
+                type: 'GET',
+                success: function(response) {
+                    if (response.code === 200) {
+                        const manuscript = response.data;
+                        
+                        // 填充基本信息
+                        $('#modalMsId').text(msId);
+                        $('#detailMsId').text(manuscript.msId);
+                        $('#detailTitle').text(manuscript.title);
+                        $('#detailAuthor').text(manuscript.authorName || '未知作者');
+                        $('#detailSubmitTime').text(manuscript.submitTime || '-');
+                        
+                        // 2. 执行自动检查
+                        runAutoCheck(msId);
+                        
+                        // 显示模态框
+                        const modal = new bootstrap.Modal(document.getElementById('checkDetailModal'));
+                        modal.show();
+                    }
+                }
+            });
+        }
+
+        // 运行自动检查
+        function runAutoCheck(msId) {
+            console.log('开始自动检查稿件:', msId);
+            
+            // 显示加载状态
+            $('#currentWordCount').html('<i class="fas fa-spinner fa-spin"></i> 检查中...');
+            $('#similarityRate').html('<i class="fas fa-spinner fa-spin"></i> 检测中...');
+            
+            $.ajax({
+                url: '/editorial-office/tech-check/auto-check/' + msId,
+                type: 'GET',
+                success: function(response) {
+                    console.log('自动检查响应:', response); // 调试日志
+                    
+                    if (response.code === 200) {
+                        const checkData = response.data;
+                        console.log('格式检查数据:', checkData.format); // 调试日志
+                        
+                        // 更新文件信息
+                        if (checkData.fileInfo) {
+                            $('#detailFileSize').text(formatFileSize(checkData.fileInfo.fileSize));
+                            $('#detailWordCount').text(checkData.fileInfo.wordCount || 0);
+                        }
+                        
+                        // 更新字数检查结果
+                        if (checkData.wordCount) {
+                            $('#currentWordCount').text(checkData.wordCount.wordCount || 0);
+                            $('#wordCountPass').prop('checked', checkData.wordCount.status === 'PASS');
+                            $('#wordCountComment').val(checkData.wordCount.message || '');
+                        }
+                        
+                        // 更新格式检查结果
+                        if (checkData.format) {
+                            const issues = checkData.format.issues || [];
+                            const score = checkData.format.score || 0;
+                            console.log('格式问题列表:', issues); // 调试日志
+                            
+                            // 显示格式得分
+                            $('#formatScore').text(score);
+                            
+                            // 渲染格式问题
+                            renderFormatIssues(issues);
+                            
+                            // 显示问题统计
+                            updateFormatIssueStats(issues);
+                        }
+                        
+                        // 更新查重检查结果
+                        if (checkData.plagiarism) {
+                            const similarityRate = checkData.plagiarism.similarityRate || 0;
+                            $('#similarityRate').text(similarityRate.toFixed(2) + '%');
+                            $('#similarityBar').css('width', Math.min(similarityRate, 100) + '%');
+                            
+                            if (similarityRate <= 20) {
+                                $('#similarityBar').removeClass('bg-danger').addClass('bg-success');
+                                $('#plagiarismPass').prop('checked', true);
+                            } else {
+                                $('#similarityBar').removeClass('bg-success').addClass('bg-danger');
+                                $('#plagiarismPass').prop('checked', false);
+                            }
+                            
+                            $('#plagiarismComment').val(checkData.plagiarism.message || '');
+                        }
+                        
+                        // 根据总体结果设置默认选项
+                        const overallResult = checkData.overallResult;
+                        if (overallResult === 'PASS') {
+                            $('#resultPass').prop('checked', true);
+                        } else if (overallResult === 'REJECT') {
+                            $('#resultReject').prop('checked', true);
+                        } else {
+                            $('#resultFail').prop('checked', true);
+                        }
+                        
+                    } else {
+                        alert('自动检查失败: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('自动检查失败:', error);
+                    alert('自动检查失败，请手动填写');
+                }
+            });
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 渲染格式问题
+        function renderFormatIssues(issues) {
+            console.log('渲染格式问题:', issues);
+            
+            const container = $('#formatIssuesList');
+            container.empty();
+            
+            if (!issues || issues.length === 0) {
+                container.html('<div class="text-success"><i class="fas fa-check-circle"></i> 未发现格式问题</div>');
+                $('#formatIssuesContainer').hide();
+                $('#formatIssueStats').hide();
+                return;
+            }
+            
+            // 按严重程度排序
+            const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
+            issues.sort((a, b) => {
+                const severityA = a.severity || 'MEDIUM';
+                const severityB = b.severity || 'MEDIUM';
+                return severityOrder[severityA] - severityOrder[severityB];
+            });
+            
+            // 生成问题列表
+            issues.forEach((issue, index) => {
+                const type = issue.type || 'GENERAL';
+                const desc = issue.description || '格式问题';
+                const severity = issue.severity || 'MEDIUM';
+                const penalty = issue.penalty || 0;
+                
+                // 获取中文描述
+                const severityChinese = getSeverityChinese(severity);
+                const typeChinese = getIssueTypeChinese(type);
+                
+                // 创建问题条目
+                const issueDiv = $(`
+                    <div class="format-issue ${severity.toLowerCase()}">
+                        <div>
+                            <span class="issue-severity severity-${severity.toLowerCase()}">${severityChinese}</span>
+                            <strong>${typeChinese}</strong>
+                        </div>
+                        <div class="mt-1">${desc}</div>
+                        ${penalty !== 0 ? `<div class="mt-1 text-danger"><small>扣分: ${Math.abs(penalty)}分</small></div>` : ''}
+                        <div class="mt-1 text-muted"><small>问题类型: ${type}</small></div>
+                    </div>
+                `);
+                
+                container.append(issueDiv);
+                
+                // 根据问题类型自动勾选对应的复选框
+                updateCheckboxByIssueType(type);
+            });
+            
+            // 显示容器
+            $('#formatIssuesContainer').show();
+            $('#formatIssueStats').show();
+        }
+        
+        // 更新格式问题统计
+        function updateFormatIssueStats(issues) {
+            if (!issues || issues.length === 0) {
+                $('#formatIssueStats').hide();
+                return;
+            }
+            
+            // 统计各严重程度的问题数量
+            const stats = {
+                critical: 0,
+                high: 0,
+                medium: 0,
+                low: 0
+            };
+            
+            issues.forEach(issue => {
+                const severity = issue.severity || 'MEDIUM';
+                switch (severity) {
+                    case 'CRITICAL':
+                        stats.critical++;
+                        break;
+                    case 'HIGH':
+                        stats.high++;
+                        break;
+                    case 'MEDIUM':
+                        stats.medium++;
+                        break;
+                    case 'LOW':
+                        stats.low++;
+                        break;
+                }
+            });
+            
+            // 更新统计显示
+            $('#criticalCount').text(stats.critical);
+            $('#highCount').text(stats.high);
+            $('#mediumCount').text(stats.medium);
+            $('#lowCount').text(stats.low);
+            
+            // 显示统计面板
+            $('#formatIssueStats').show();
+            
+            // 更新格式检查备注
+            let comment = `发现 ${issues.length} 个格式问题：`;
+            if (stats.critical > 0) comment += ` 严重(${stats.critical})`;
+            if (stats.high > 0) comment += ` 重要(${stats.high})`;
+            if (stats.medium > 0) comment += ` 一般(${stats.medium})`;
+            if (stats.low > 0) comment += ` 轻微(${stats.low})`;
+            $('#formatComment').val(comment);
+        }
+        
+        // 根据问题类型更新对应的复选框
+        function updateCheckboxByIssueType(type) {
+            switch(type) {
+                case 'TITLE_FORMAT':
+                case 'FILE_NOT_FOUND':
+                case 'FILE_TYPE':
+                    $('#formatTitle').prop('checked', false);
+                    break;
+                case 'ABSTRACT_FORMAT':
+                    $('#formatAbstract').prop('checked', false);
+                    break;
+                case 'KEYWORDS_FORMAT':
+                    $('#formatKeywords').prop('checked', false);
+                    break;
+                case 'REFERENCE_FORMAT':
+                    $('#formatReference').prop('checked', false);
+                    break;
+                case 'FIGURES_TABLES':
+                case 'EQUATIONS':
+                    $('#formatFigure').prop('checked', false);
+                    break;
+                case 'PARAGRAPH_FORMAT':
+                case 'FONT_CONSISTENCY':
+                case 'LAYOUT':
+                case 'HEADERS_FOOTERS':
+                    $('#formatLayout').prop('checked', false);
+                    break;
+            }
+        }
+        
+        // 获取严重程度的中文描述
+        function getSeverityChinese(severity) {
+            switch(severity) {
+                case 'CRITICAL': return '严重';
+                case 'HIGH': return '重要';
+                case 'MEDIUM': return '一般';
+                case 'LOW': return '轻微';
+                default: return severity;
+            }
+        }
+        
+        // 获取问题类型的中文描述
+        function getIssueTypeChinese(type) {
+            const typeMap = {
+                'TITLE_FORMAT': '标题格式',
+                'ABSTRACT_FORMAT': '摘要格式',
+                'KEYWORDS_FORMAT': '关键词格式',
+                'STRUCTURE': '章节结构',
+                'SECTION_ORDER': '章节顺序',
+                'REFERENCE_FORMAT': '参考文献格式',
+                'FIGURES_TABLES': '图表格式',
+                'EQUATIONS': '公式格式',
+                'UNITS': '单位符号',
+                'PUNCTUATION': '标点符号',
+                'PARAGRAPH_FORMAT': '段落格式',
+                'FONT_CONSISTENCY': '字体一致性',
+                'HEADERS_FOOTERS': '页眉页脚',
+                'FILE_SIZE': '文件大小',
+                'FILE_TYPE': '文件类型',
+                'FILE_NOT_FOUND': '文件缺失',
+                'SYSTEM': '系统错误',
+                'CONTENT': '内容问题',
+                'LAYOUT': '页面布局'
+            };
+            return typeMap[type] || type;
+        }
+        
+     // 1. 添加查重服务选择
+        function populatePlagiarismServices() {
+            $.ajax({
+                url: '/api/plagiarism/services',
+                type: 'GET',
+                success: function(response) {
+                    if (response.code === 200) {
+                        const services = response.data;
+                        const select = $('#plagiarismServiceSelect');
+                        select.empty();
+                        
+                        services.forEach(service => {
+                            select.append(`
+                                <option value="${service.name}" ${service.enabled ? '' : 'disabled'}>
+                                    ${service.name} - ${service.description}
+                                </option>
+                            `);
+                        });
+                    }
+                }
+            });
+        }
+     
+     // 2. 更新查重结果显示
+        function updatePlagiarismResult(checkData) {
+            if (checkData.plagiarism) {
+                const plagiarism = checkData.plagiarism;
+                
+                // 更新相似度
+                $('#similarityRate').text(plagiarism.similarityRate.toFixed(2) + '%');
+                $('#similarityBar').css('width', Math.min(plagiarism.similarityRate, 100) + '%');
+                
+                if (plagiarism.similarityRate <= 20) {
+                    $('#similarityBar').removeClass('bg-danger bg-warning').addClass('bg-success');
+                    $('#plagiarismPass').prop('checked', true);
+                } else if (plagiarism.similarityRate <= 30) {
+                    $('#similarityBar').removeClass('bg-success bg-danger').addClass('bg-warning');
+                    $('#plagiarismPass').prop('checked', false);
+                } else {
+                    $('#similarityBar').removeClass('bg-success bg-warning').addClass('bg-danger');
+                    $('#plagiarismPass').prop('checked', false);
+                }
+                
+                // 显示使用的服务
+                $('#serviceUsed').text('服务: ' + (plagiarism.serviceUsed || '未知'));
+                
+                // 显示AI检测结果
+                if (plagiarism.aiDetection !== undefined) {
+                    const aiHtml = `
+                        <div class="alert ${plagiarism.aiDetection > 50 ? 'alert-warning' : 'alert-info'} mt-2">
+                            <i class="fas fa-robot"></i> AI检测: ${plagiarism.aiDetection.toFixed(1)}%
+                            ${plagiarism.aiWarning ? ` - ${plagiarism.aiWarning}` : ''}
+                        </div>
+                    `;
+                    $('#plagiarismResultContainer').append(aiHtml);
+                }
+                
+                // 显示相似来源
+                if (plagiarism.similarSources && plagiarism.similarSources.length > 0) {
+                    let sourcesHtml = '<div class="mt-3"><strong>相似来源:</strong><ul class="mt-2">';
+                    plagiarism.similarSources.forEach(source => {
+                        sourcesHtml += `
+                            <li>
+                                <a href="${source.url || '#'}" target="_blank">${source.title}</a>
+                                <br><small>${source.author} - ${source.source} (相似度: ${source.similarity.toFixed(1)}%)</small>
+                            </li>
+                        `;
+                    });
+                    sourcesHtml += '</ul></div>';
+                    $('#plagiarismResultContainer').append(sourcesHtml);
+                }
+                
+                // 添加查看报告链接
+                if (plagiarism.reportUrl) {
+                    const reportHtml = `
+                        <div class="mt-3">
+                            <a href="${plagiarism.reportUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-file-alt"></i> 查看详细报告
+                            </a>
+                        </div>
+                    `;
+                    $('#plagiarismResultContainer').append(reportHtml);
+                }
+            }
+        }
+     
+     // 3. 运行查重时选择服务
+        function runPlagiarismCheckWithService() {
+            const service = $('#plagiarismServiceSelect').val();
+            const msId = currentManuscriptId;
+            
+            $('#similarityRate').html('<i class="fas fa-spinner fa-spin"></i> 检测中...');
+            
+            $.ajax({
+                url: '/api/plagiarism/check',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    msId: msId,
+                    service: service
+                }),
+                success: function(response) {
+                    if (response.code === 200) {
+                        updatePlagiarismResult({ plagiarism: response.data });
+                    } else {
+                        alert('查重失败: ' + response.message);
+                        $('#similarityRate').text('检查失败');
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+server:
+  port: 2008
+  servlet:
+    context-path: /
+    
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:change-this-jwt-secret-before-production}
+  expiration: 86400000  # 24小时，单位毫秒
+  issuer: paper-system
+
+
+spring:
+  application:
+    name: paper-system
+  security:
+    enabled: false
+  resources:
+    static-locations: classpath:/static/, classpath:/public/, classpath:/META-INF/resources/, classpath:/webapp/  # 加载 webapp 中的资源
+  mvc:
+    view:
+     prefix:  /WEB-INF/jsp/
+     suffix: .jsp
+     static-path-pattern: /upload/
+    resources:
+      static-locations: file:${file.upload-dir}
+       # JSP视图解析器（不变）
+   
+  web:
+    resources:
+     static-locations: 
+     - classpath:/static/
+     - classpath:/public/
+     - classpath:/resources/
+     - classpath:/META-INF/resources/
+     - file:src/main/webapp/
+     add-mappings: true
+  
+  # 数据源配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/paper_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:change-me}
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB  # 增加以适应视频文件
+      max-request-size: 100MB  # 增加以适应视频文件
+  
+  # 邮件配置
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:your-email@qq.com}
+    password: ${MAIL_PASSWORD:your-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # Jackson配置（处理JSON日期格式）
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+# MyBatis配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml,classpath:mybatis/*.xml
+  type-aliases-package: com.bjfu.paper.model.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    cache-enabled: true
+  global-config:
+    db-config:
+      table-underline: true
+      column-underline: true
+      id-type: auto
+      logic-delete-field: deleted  # 逻辑删除字段名
+      logic-delete-value: 1        # 逻辑已删除值
+      logic-not-delete-value: 0    # 逻辑未删除值
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.bjfu.paper: DEBUG
+    org.springframework.web: DEBUG
+    com.bjfu.paper.mapper: TRACE
+    com.baomidou.mybatisplus: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/paper-system.log
+    max-size: 10MB
+    max-history: 30
+
+# 文件上传配置
+file:
+  upload:
+    # 上传文件保存的根目录（绝对路径或相对路径）
+    base-path: ${user.dir}/upload/
+    # 版本文件保存路径
+    versions-path: versions/original/
+    # 新闻图片上传路径
+    news-image-path: news/images/
+    # 公告图片上传路径
+    announcement-image-path: announcements/images/
+    # 新闻附件上传路径（包括视频）
+    news-attachment-path: news/attachments/
+    # 公告附件上传路径（包括视频）
+    announcement-attachment-path: announcements/attachments/
+    # 最大文件大小
+    max-size: 100MB  # 增加以适应视频文件
+    # 允许的图片类型
+    image-allowed-types: jpg,jpeg,png,gif,webp,bmp
+    # 允许的文档类型
+    document-allowed-types: pdf,doc,docx,xls,xlsx,ppt,pptx,txt,rtf
+    # 允许的视频类型 - 新增
+    video-allowed-types: mp4,avi,mov,wmv,flv,webm,mkv,mpg,mpeg,3gp
+    # 允许的所有文件类型 - 添加视频类型
+    allowed-types: jpg,jpeg,png,gif,webp,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,rtf,zip,rar,mp4,avi,mov,wmv,flv,webm,mkv,mpg,mpeg,3gp
+    # 支持的审查文件类型
+    check-types: PDF,DOC,DOCX,TXT
+    
+# 富文本编辑器配置
+editor:
+  # 图片上传配置
+  image:
+    max-size: 5242880  # 5MB
+    allowed-types: image/jpeg,image/png,image/gif,image/webp,image/bmp
+  # 附件上传配置
+  attachment:
+    max-size: 10485760  # 10MB
+    allowed-types: application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+  # 视频上传配置 - 新增
+  video:
+    max-size: 52428800  # 50MB
+    allowed-types: video/mp4,video/avi,video/quicktime,video/x-ms-wmv,video/x-flv,video/webm,video/x-matroska,video/mpeg,video/3gpp
+    # 视频预览配置
+    preview:
+      max-width: 800px
+      max-height: 600px
+      autoplay: false
+      controls: true
+      loop: false
+      muted: true
+
+plagiarism:
+  grammarly:
+    enabled: true
+    client-id: ${GRAMMARLY_CLIENT_ID:}
+    client-secret: ${GRAMMARLY_CLIENT_SECRET:}
+    api-url: https://api.grammarly.com
+    timeout: 30000
+
+custom:
+  admin:
+    view:
+      prefix: /webapp/back/admin/
+      suffix: .jsp
+
+# 视频转码配置（可选）- 新增
+video:
+  processing:
+    enabled: false  # 是否启用视频转码
+    ffmpeg-path: /usr/bin/ffmpeg  # FFmpeg路径
+    formats:
+      - mp4:  # 目标格式
+          codec: libx264
+          preset: medium
+          crf: 23
+          max-bitrate: 2M
+      - webm:  # WebM格式（更好的浏览器兼容性）
+          codec: libvpx-vp9
+          quality: good
+          max-bitrate: 1.5M
+    thumbnail:  # 视频缩略图生成
+      enabled: true
+      width: 320
+      height: 180
+      format: jpg

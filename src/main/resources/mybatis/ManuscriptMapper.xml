@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bjfu.paper.mapper.ManuscriptMapper">
+    
+    <!-- 分页查询待审查稿件（带作者信息） -->
+    <select id="selectPendingManuscriptsByPage" resultType="com.bjfu.paper.model.entity.Manuscript">
+        SELECT 
+            m.ms_id as msId,
+            m.title as title,
+            u.full_name as authorName,
+            u.unit as authorUnit,
+            DATE_FORMAT(m.submit_time, '%Y-%m-%d %H:%i:%s') as submitTime,
+            m.status as status
+        FROM manuscript m
+        JOIN user u ON m.submitter_id = u.user_id
+        WHERE m.status = 'Submitted'
+        <if test="keyword != null and keyword != ''">
+            AND (
+                m.title LIKE CONCAT('%', #{keyword}, '%')
+                OR m.ms_id LIKE CONCAT('%', #{keyword}, '%')
+                OR u.full_name LIKE CONCAT('%', #{keyword}, '%')
+                OR u.unit LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        ORDER BY m.submit_time DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+    
+    <!-- 统计待审查稿件数量 -->
+    <select id="countPendingManuscripts" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM manuscript m
+        JOIN user u ON m.submitter_id = u.user_id
+        WHERE m.status = 'Submitted'
+        <if test="keyword != null and keyword != ''">
+            AND (
+                m.title LIKE CONCAT('%', #{keyword}, '%')
+                OR m.ms_id LIKE CONCAT('%', #{keyword}, '%')
+                OR u.full_name LIKE CONCAT('%', #{keyword}, '%')
+                OR u.unit LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+    </select>
+    
+    <!-- 获取稿件详情（包含作者信息） -->
+    <select id="selectManuscriptDetail" resultType="com.bjfu.paper.model.entity.Manuscript">
+        SELECT 
+            m.ms_id as msId,
+            m.title as title,
+            CONCAT(u.full_name, '（', u.unit, '）') as authorName,
+            DATE_FORMAT(m.submit_time, '%Y-%m-%d %H:%i:%s') as submitTime,
+            m.abstract as abstractText,
+            m.keywords as keywords,
+            m.status as status,
+            m.research_topic as researchTopic,
+            m.funding_info as fundingInfo
+        FROM manuscript m
+        JOIN user u ON m.submitter_id = u.user_id
+        WHERE m.ms_id = #{msId}
+    </select>
+    
+    <!-- 更新稿件状态 -->
+    <update id="updateStatus">
+        UPDATE manuscript 
+        SET status = #{status} 
+        WHERE ms_id = #{msId}
+    </update>
+    
+    <!-- 批量更新状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE manuscript 
+        SET status = #{status} 
+        WHERE ms_id IN
+        <foreach collection="msIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+    
+    <!-- 获取统计数据 -->
+    <select id="countByStatusPending" resultType="java.lang.Integer">
+        SELECT COUNT(*) 
+        FROM manuscript 
+        WHERE status = 'Submitted'
+    </select>
+    
+    <select id="countByStatusPassed" resultType="java.lang.Integer">
+        SELECT COUNT(*) 
+        FROM manuscript 
+        WHERE status IN ('AWAITING_EDITOR_ASSIGNMENT', 'WITH_EDITOR', 'UNDER_REVIEW', 'REVISION_REQUIRED', 'ACCEPTED')
+    </select>
+    
+    <select id="countByStatusFailed" resultType="java.lang.Integer">
+        SELECT COUNT(*) 
+        FROM manuscript 
+        WHERE status IN ('Incomplete_Submission', 'REJECTED')
+    </select>
+    
+    <select id="countTotal" resultType="java.lang.Integer">
+        SELECT COUNT(*) 
+        FROM manuscript
+    </select>
+    
+    <!-- 获取已发表的论文（状态为ACCEPTED且已发布） -->
+	<select id="selectPublishedPapers" resultType="com.bjfu.paper.model.entity.Manuscript">
+	    SELECT 
+	        m.ms_id as msId,
+	        m.title as title,
+	        m.abstract as abstractText,
+	        m.keywords as keywords,
+	        m.author_list as authorList,
+	        u.full_name as authorName,
+	        u.unit as authorUnit,
+	        DATE_FORMAT(m.publish_date, '%Y-%m-%d') as publishDate,
+	        m.citation_count as citationCount,
+	        m.download_count as downloadCount,
+	        m.view_count as viewCount,
+	        m.likes_count as likesCount
+	    FROM manuscript m
+	    JOIN user u ON m.submitter_id = u.user_id
+	    WHERE m.status = 'Accept' 
+	      AND m.is_published = 1
+	    ORDER BY m.publish_date DESC
+	    LIMIT #{limit}
+	</select>
+
+<!-- 获取最新发表的论文 -->
+<select id="selectLatestPublishedPapers" resultType="com.bjfu.paper.model.entity.Manuscript">
+    SELECT 
+        m.ms_id as msId,
+        m.title as title,
+        m.abstract as abstractText,
+        m.keywords as keywords,
+        m.author_list as authorList,
+        u.full_name as authorName,
+        u.unit as authorUnit,
+        DATE_FORMAT(m.publish_date, '%Y-%m-%d') as publishDate,
+        m.citation_count as citationCount,
+        m.download_count as downloadCount,
+        m.view_count as viewCount,
+        m.likes_count as likesCount
+    FROM manuscript m
+    JOIN user u ON m.submitter_id = u.user_id
+    WHERE m.status = 'Accept' 
+      AND m.is_published = 1
+    ORDER BY m.publish_date DESC
+    LIMIT #{limit}
+</select>
+
+<!-- 获取高被引论文 -->
+<select id="selectTopCitedPapers" resultType="com.bjfu.paper.model.entity.Manuscript">
+    SELECT 
+        m.ms_id as msId,
+        m.title as title,
+        m.abstract as abstractText,
+        m.keywords as keywords,
+        m.author_list as authorList,
+        u.full_name as authorName,
+        u.unit as authorUnit,
+        DATE_FORMAT(m.publish_date, '%Y-%m-%d') as publishDate,
+        m.citation_count as citationCount,
+        m.download_count as downloadCount,
+        m.view_count as viewCount,
+        m.likes_count as likesCount
+    FROM manuscript m
+    JOIN user u ON m.submitter_id = u.user_id
+    WHERE m.status = 'Accept' 
+      AND m.is_published = 1
+    ORDER BY m.citation_count DESC, m.publish_date DESC
+    LIMIT #{limit}
+</select>
+
+<!-- 获取最多下载论文 -->
+<select id="selectTopDownloadedPapers" resultType="com.bjfu.paper.model.entity.Manuscript">
+    SELECT 
+        m.ms_id as msId,
+        m.title as title,
+        m.abstract as abstractText,
+        m.keywords as keywords,
+        m.author_list as authorList,
+        u.full_name as authorName,
+        u.unit as authorUnit,
+        DATE_FORMAT(m.publish_date, '%Y-%m-%d') as publishDate,
+        m.citation_count as citationCount,
+        m.download_count as downloadCount,
+        m.view_count as viewCount,
+        m.likes_count as likesCount
+    FROM manuscript m
+    JOIN user u ON m.submitter_id = u.user_id
+    WHERE m.status = 'Accept' 
+      AND m.is_published = 1
+    ORDER BY m.download_count DESC, m.publish_date DESC
+    LIMIT #{limit}
+</select>
+
+<!-- 获取最受欢迎论文（综合评分） -->
+<select id="selectTopPopularPapers" resultType="com.bjfu.paper.model.entity.Manuscript">
+    SELECT 
+        m.ms_id as msId,
+        m.title as title,
+        m.abstract as abstractText,
+        m.keywords as keywords,
+        m.author_list as authorList,
+        u.full_name as authorName,
+        u.unit as authorUnit,
+        DATE_FORMAT(m.publish_date, '%Y-%m-%d') as publishDate,
+        m.citation_count as citationCount,
+        m.download_count as downloadCount,
+        m.view_count as viewCount,
+        m.likes_count as likesCount,
+        -- 综合评分公式：引用*0.4 + 下载*0.3 + 查看*0.2 + 点赞*0.1
+        (m.citation_count * 0.4 + m.download_count * 0.3 + m.view_count * 0.2 + m.likes_count * 0.1) as popularityScore
+    FROM manuscript m
+    JOIN user u ON m.submitter_id = u.user_id
+    WHERE m.status = 'Accept' 
+      AND m.is_published = 1
+    ORDER BY popularityScore DESC, m.publish_date DESC
+    LIMIT #{limit}
+</select>
+
+<!-- 增加查看次数 -->
+<update id="increaseViewCount">
+    UPDATE manuscript 
+    SET view_count = view_count + #{increment}
+    WHERE ms_id = #{msId}
+</update>
+
+<!-- 增加下载次数 -->
+<update id="increaseDownloadCount">
+    UPDATE manuscript 
+    SET download_count = download_count + #{increment}
+    WHERE ms_id = #{msId}
+</update>
+
+<!-- 增加引用次数 -->
+<update id="increaseCitationCount">
+    UPDATE manuscript 
+    SET citation_count = citation_count + #{increment}
+    WHERE ms_id = #{msId}
+</update>
+
+<!-- 增加点赞次数 -->
+<update id="increaseLikesCount">
+    UPDATE manuscript 
+    SET likes_count = likes_count + #{increment}
+    WHERE ms_id = #{msId}
+</update>
+    
+</mapper>

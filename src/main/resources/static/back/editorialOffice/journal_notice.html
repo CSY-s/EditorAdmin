@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期刊公告管理 - 编辑部管理员</title>
+    <!-- 引入Bootstrap和Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/editorial-office.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 富文本编辑器样式 -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <style>
+        /* 保持与news_manage.html一致的样式 */
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 1400px;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            height: 100%;
+        }
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .search-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 0;
+            overflow: hidden;
+        }
+        .table-header {
+            background-color: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .table {
+            margin: 0;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #555;
+            background-color: #f9f9f9;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* 富文本编辑器样式 */
+        .ql-container {
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            height: 350px !important;
+        }
+        .ql-toolbar {
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        
+        /* 详情模态框中的富文本内容样式 */
+        #detailContent {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        
+        /* 确保富文本内容中的图片自适应 */
+        #detailContent img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* 公告类型标签样式 */
+        .badge {
+            padding: 5px 10px;
+            font-weight: 500;
+        }
+        .badge-journal-info {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        .badge-impact-factor {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .badge-policy-guide {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+        .badge-important-notice {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .badge-other {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        /* 状态标签 */
+        .badge-published {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .badge-draft {
+            background-color: #f5f5f5;
+            color: #616161;
+        }
+        .badge-scheduled {
+            background-color: #e1f5fe;
+            color: #0277bd;
+        }
+        
+        /* 置顶标签 */
+        .badge-top {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .action-buttons .btn {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-state i {
+            font-size: 60px;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .pagination {
+            margin: 20px 0;
+        }
+        .date-picker {
+            position: relative;
+        }
+        .date-picker input {
+            padding-left: 35px;
+        }
+        .date-picker i {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            color: #666;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #555;
+        }
+        .announcement-content-preview {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        /* 导航菜单样式 */
+        .nav-menu {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .nav-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            gap: 10px;
+        }
+        .nav-menu li {
+            flex: 1;
+        }
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            text-decoration: none;
+            color: #555;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .nav-menu a:hover {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .nav-menu a.active {
+            background-color: #e7f1ff;
+            color: #0d6efd;
+            font-weight: 600;
+        }
+        .nav-menu i {
+            font-size: 16px;
+        }
+        
+        /* 操作按钮区域 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2页 10px rgba(0,0,0,0.05);
+        }
+        .action-buttons .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 头部样式 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #333;
+            font-weight: 600;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: #0d6efd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .user-info #userName {
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-group .btn {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        
+        /* 编辑模态框高度调整 */
+        #editModal .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        /* 图片上传进度条 */
+        .progress {
+            height: 8px;
+            margin-top: 5px;
+        }
+        
+        /* 富文本编辑器中附件样式 */
+		.editor-attachment {
+		    margin: 10px 0;
+		    padding: 8px 12px;
+		    background: #f8f9fa;
+		    border-radius: 4px;
+		    border-left: 4px solid #0d6efd;
+		    display: flex;
+		    align-items: center;
+		    border: 1px solid #dee2e6;
+		}
+		
+		.editor-attachment:hover {
+		    background: #e9ecef;
+		}
+		
+		.editor-attachment i {
+		    font-size: 18px;
+		    min-width: 24px;
+		}
+		
+		.editor-attachment a {
+		    text-decoration: none;
+		    font-weight: 500;
+		    color: #0d6efd;
+		    flex-grow: 1;
+		}
+		
+		.editor-attachment a:hover {
+		    text-decoration: underline;
+		}
+		
+		.editor-attachment span {
+		    color: #6c757d;
+		    font-size: 0.9em;
+		    white-space: nowrap;
+		}
+		
+		.editor-attachment button {
+		    padding: 2px 8px;
+		    font-size: 0.8em;
+		}
+    </style>
+</head>
+<body>
+    <a href="/front/" style="position:fixed;right:24px;bottom:24px;z-index:1200;display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;background:#1f4f99;color:#fff;text-decoration:none;box-shadow:0 12px 24px rgba(31,79,153,.22);">
+        <i class="fas fa-globe"></i> 前台首页
+    </a>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div>
+                <h1><i class="fas fa-bullhorn"></i> 期刊公告管理</h1>
+                <p class="mb-0">管理期刊公告、政策指南、影响因子等重要通知</p>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <div>
+                    <div id="userName">编辑部管理员</div>
+                    <div class="btn-group">
+                        <a href="dashboard.html" class="btn btn-sm btn-light">
+                            <i class="fas fa-home"></i> 工作台
+                        </a>
+                        <button class="btn btn-sm btn-light" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="nav-menu">
+            <ul>
+                <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> 工作台</a></li>
+                <li><a href="tech_check.html"><i class="fas fa-clipboard-check"></i> 形式审查</a></li>
+                <li><a href="news_manage.html"><i class="fas fa-newspaper"></i> 新闻管理</a></li>
+                <li><a href="journal_notice.html" class="active"><i class="fas fa-bullhorn"></i> 期刊公告</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> 系统设置</a></li>
+            </ul>
+        </nav>
+
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="refreshList()">
+                <i class="fas fa-sync-alt"></i> 刷新列表
+            </button>
+            <button class="btn btn-success" onclick="addAnnouncement()">
+                <i class="fas fa-plus"></i> 添加公告
+            </button>
+            <button class="btn btn-info" onclick="exportData()">
+                <i class="fas fa-file-export"></i> 导出数据
+            </button>
+            <div class="ms-auto">
+                <input type="text" class="form-control" placeholder="搜索公告标题或内容..." 
+                       id="searchKeyword" style="width: 300px;">
+            </div>
+            <button class="btn btn-secondary" onclick="loadAnnouncementList(1)">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </div>
+
+        <!-- 统计信息卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalAnnouncements">0</div>
+                    <div class="stat-label">公告总数</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="publishedAnnouncements">0</div>
+                    <div class="stat-label">已发布</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="topAnnouncements">0</div>
+                    <div class="stat-label">置顶公告</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="activeAnnouncements">0</div>
+                    <div class="stat-label">有效公告</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索和筛选区域 -->
+        <div class="search-section">
+            <h5 class="mb-3"><i class="fas fa-filter me-2"></i>高级筛选</h5>
+            <form id="searchForm">
+                <div class="row g-3">
+                    <!-- 时间范围搜索 -->
+                    <div class="col-md-4">
+                        <label class="form-label">发布时间范围</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="date-picker">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <input type="date" class="form-control" id="startDate">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="date-picker">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <input type="date" class="form-control" id="endDate">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 公告类型筛选 -->
+                    <div class="col-md-3">
+                        <label class="form-label">公告类型</label>
+                        <select class="form-select" id="filterType">
+                            <option value="">全部类型</option>
+                            <option value="JOURNAL_INFO">期刊信息</option>
+                            <option value="IMPACT_FACTOR">影响因子</option>
+                            <option value="POLICY_GUIDE">政策指南</option>
+                            <option value="IMPORTANT_NOTICE">重要通知</option>
+                            <option value="OTHER">其他</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 发布状态筛选 -->
+                    <div class="col-md-3">
+                        <label class="form-label">发布状态</label>
+                        <select class="form-select" id="filterStatus">
+                            <option value="">全部状态</option>
+                            <option value="Published">已发布</option>
+                            <option value="Draft">草稿</option>
+                            <option value="Scheduled">定时发布</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 关联期刊筛选 -->
+                    <div class="col-md-2">
+                        <label class="form-label">关联期刊</label>
+                        <select class="form-select" id="filterJournal">
+                            <option value="">全部期刊</option>
+                            <option value="1">国际人工智能研究</option>
+                            <option value="2">计算机科学与技术</option>
+                            <option value="3">数据科学与工程</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 其他筛选条件 -->
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <label class="form-label">是否置顶</label>
+                        <select class="form-select" id="filterTop">
+                            <option value="">全部</option>
+                            <option value="1">置顶</option>
+                            <option value="0">非置顶</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">优先级</label>
+                        <select class="form-select" id="filterPriority">
+                            <option value="">全部</option>
+                            <option value="5">5（最高）</option>
+                            <option value="4">4</option>
+                            <option value="3">3</option>
+                            <option value="2">2</option>
+                            <option value="1">1（最低）</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">有效状态</label>
+                        <select class="form-select" id="filterEffective">
+                            <option value="">全部</option>
+                            <option value="active">有效期内</option>
+                            <option value="expired">已过期</option>
+                            <option value="future">未生效</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 重置按钮 -->
+                <div class="row mt-3">
+                    <div class="col-md-12 text-end">
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetSearch()">
+                            <i class="fas fa-redo"></i> 重置筛选
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 公告表格区域 -->
+        <div class="table-container">
+            <div class="table-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>期刊公告列表</h5>
+                    <small class="text-muted">共 <span id="totalCount">0</span> 条记录</small>
+                </div>
+                <div>
+                    <button class="btn btn-success btn-sm" onclick="addAnnouncement()">
+                        <i class="fas fa-plus"></i> 添加公告
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 公告表格 -->
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="60">ID</th>
+                            <th>标题</th>
+                            <th width="100">类型</th>
+                            <th width="60">置顶</th>
+                            <th width="60">优先级</th>
+                            <th width="100">状态</th>
+                            <th width="120">发布日期</th>
+                            <th width="100">有效期</th>
+                            <th width="120">查看次数</th>
+                            <th width="150">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="announcementTableBody">
+                        <!-- 数据动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 空状态 -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-bullhorn"></i>
+                <h4>暂无公告数据</h4>
+                <p class="text-muted">还没有发布任何期刊公告，点击"添加公告"按钮创建第一条</p>
+            </div>
+            
+            <!-- 加载状态 -->
+            <div id="loadingState" class="loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">正在加载公告数据...</p>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="px-3 pb-3">
+                <nav id="pagination" aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        <!-- 分页按钮动态生成 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情模态框 -->
+    <div class="modal fade" id="detailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">公告详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="100">标题：</th>
+                            <td id="detailTitle">-</td>
+                        </tr>
+                        <tr>
+                            <th>内容：</th>
+                            <td id="detailContent">-</td>
+                        </tr>
+                        <tr>
+                            <th>类型：</th>
+                            <td id="detailType">-</td>
+                        </tr>
+                        <tr>
+                            <th>关联期刊：</th>
+                            <td id="detailJournal">-</td>
+                        </tr>
+                        <tr>
+                            <th>状态：</th>
+                            <td id="detailStatus">-</td>
+                        </tr>
+                        <tr>
+                            <th>是否置顶：</th>
+                            <td id="detailTop">-</td>
+                        </tr>
+                        <tr>
+                            <th>优先级：</th>
+                            <td id="detailPriority">-</td>
+                        </tr>
+                        <tr>
+                            <th>发布日期：</th>
+                            <td id="detailPublishDate">-</td>
+                        </tr>
+                        <tr>
+                            <th>生效日期：</th>
+                            <td id="detailEffectiveDate">-</td>
+                        </tr>
+                        <tr>
+                            <th>过期日期：</th>
+                            <td id="detailExpireDate">-</td>
+                        </tr>
+                        <tr>
+                            <th>查看次数：</th>
+                            <td id="detailViewCount">-</td>
+                        </tr>
+                        <tr>
+                            <th>附件：</th>
+                            <td id="detailAttachment">无</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑公告模态框 - 包含富文本编辑器 -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑期刊公告</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editAnnouncementForm">
+                        <input type="hidden" id="editAnnouncementId" value="">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">标题 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editTitle" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">内容 <span class="text-danger">*</span></label>
+                            <div id="announcementEditor"></div>
+                            <textarea id="editContent" style="display:none;" required></textarea>
+                            <div class="form-text mt-2">
+                                <small class="text-muted">支持富文本编辑，可以插入图片、设置样式等。图片大小限制5MB，支持JPG、PNG、GIF格式</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">公告类型 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editAnnouncementType" required>
+                                    <option value="JOURNAL_INFO">期刊信息</option>
+                                    <option value="IMPACT_FACTOR">影响因子</option>
+                                    <option value="POLICY_GUIDE">政策指南</option>
+                                    <option value="IMPORTANT_NOTICE">重要通知</option>
+                                    <option value="OTHER">其他</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">发布状态 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editPublishStatus" required>
+                                    <option value="Draft">草稿</option>
+                                    <option value="Published">已发布</option>
+                                    <option value="Scheduled">定时发布</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">关联期刊</label>
+                                <select class="form-select" id="editRelatedJournalId">
+                                    <option value="">不关联特定期刊（适用所有期刊）</option>
+                                    <option value="1">国际人工智能研究</option>
+                                    <option value="2">计算机科学与技术</option>
+                                    <option value="3">数据科学与工程</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">优先级</label>
+                                <select class="form-select" id="editPriority">
+                                    <option value="1">1（最低）</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5（最高）</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">生效日期</label>
+                                <input type="date" class="form-control" id="editEffectiveDate">
+                                <div class="form-text">留空表示立即生效</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">过期日期</label>
+                                <input type="date" class="form-control" id="editExpireDate">
+                                <div class="form-text">留空表示长期有效</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">是否置顶</label>
+                                <select class="form-select" id="editIsTop">
+                                    <option value="0">否</option>
+                                    <option value="1">是</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">定时发布时间</label>
+                                <input type="datetime-local" class="form-control" id="editScheduleTime">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">附件路径（可选）</label>
+                            <input type="text" class="form-control" id="editAttachmentPath" 
+                                   placeholder="例如：/upload/announcements/xxx.pdf">
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>确定要删除这条公告吗？</p>
+                    <p class="text-muted small">删除后将无法恢复，请谨慎操作！</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片上传进度模态框 -->
+    <div class="modal fade" id="uploadProgressModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-cloud-upload-alt me-2"></i>上传图片</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">上传中...</span>
+                    </div>
+                    <p id="uploadStatus">正在上传图片...</p>
+                    <div class="progress mb-3">
+                        <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="uploadError" class="alert alert-danger d-none" role="alert"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入jQuery、Bootstrap JS和富文本编辑器 -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    
+    <script>
+        // 配置
+        const apiBaseUrl = '/editorial-office/journal-announcement';
+        const uploadApiUrl = '/editorial-office/upload';
+        const pageSize = 10;
+        let currentPage = 1;
+        let totalItems = 0;
+        let deleteAnnouncementId = null;
+        let announcementEditor = null;
+        
+        // 页面加载完成时执行
+		$(document).ready(function() {
+		    console.log('期刊公告管理页面加载完成');
+		    console.log('API基础URL:', apiBaseUrl);
+		    
+		    loadStatistics();
+		    loadAnnouncementList(1);
+		    initDatePickers();
+		    
+		    // 初始化编辑器 - 注意变量名
+		    announcementEditor = initEditor('announcement');
+		    console.log('编辑器初始化完成:', announcementEditor ? '成功' : '失败');
+		    
+		    // 绑定编辑表单提交事件
+		    $('#editAnnouncementForm').submit(function(e) {
+		        e.preventDefault();
+		        submitAnnouncementForm();
+		    });
+		    
+		    // 监听搜索框回车事件
+		    $('#searchKeyword').keypress(function(e) {
+		        if (e.which === 13) {
+		            loadAnnouncementList(1);
+		            return false;
+		        }
+		    });
+});
+        
+        // 初始化富文本编辑器
+		function initEditor(type) {
+		    const editorId = type === 'news' ? '#newsEditor' : '#announcementEditor';
+		    
+		    // 自定义Quill图标
+		    const icons = Quill.import('ui/icons');
+		    icons['attachment'] = '<i class="fas fa-paperclip"></i>';
+		    icons['video'] = '<i class="fas fa-video"></i>'; // 添加视频图标
+		    
+		    // ========== 关键修改：添加Video Blot注册 ==========
+		    try {
+		        const BlockEmbed = Quill.import('blots/block/embed');
+		        
+		        class VideoBlot extends BlockEmbed {
+		            static create(value) {
+		                const node = super.create();
+		                
+		                if (typeof value === 'string') {
+		                    // 字符串形式的URL
+		                    node.setAttribute('src', value);
+		                } else if (typeof value === 'object') {
+		                    // 对象形式的视频数据
+		                    node.setAttribute('src', value.url || value.src || '');
+		                    if (value.poster) {
+		                        node.setAttribute('poster', value.poster);
+		                    }
+		                    if (value.title) {
+		                        node.setAttribute('title', value.title);
+		                    }
+		                }
+		                
+		                node.setAttribute('controls', '');
+		                node.setAttribute('controlsList', 'nodownload');
+		                node.setAttribute('style', 'max-width: 100%; max-height: 400px; display: block;');
+		                node.setAttribute('preload', 'metadata');
+		                
+		                return node;
+		            }
+		            
+		            static value(node) {
+		                return {
+		                    src: node.getAttribute('src'),
+		                    poster: node.getAttribute('poster') || '',
+		                    title: node.getAttribute('title') || ''
+		                };
+		            }
+		        }
+		        
+		        VideoBlot.blotName = 'video';
+		        VideoBlot.tagName = 'VIDEO';
+		        VideoBlot.className = 'ql-video';
+		        
+		        // 注册Video Blot
+		        try {
+		            Quill.register(VideoBlot, true);
+		        } catch (e) {
+		            console.log('Video blot already registered or error:', e.message);
+		        }
+		        
+		    } catch (e) {
+		        console.error('Failed to register VideoBlot:', e);
+		    }
+		    // ========== 关键修改结束 ==========
+		    
+		    // 初始化Quill编辑器
+		    const editor = new Quill(editorId, {
+		        theme: 'snow',
+		        modules: {
+		            toolbar: {
+		                container: [
+		                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+		                    ['bold', 'italic', 'underline', 'strike'],
+		                    [{ 'color': [] }, { 'background': [] }],
+		                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+		                    [{ 'align': [] }],
+		                    ['link', 'image', 'attachment', 'video'], // 添加视频按钮
+		                    ['blockquote', 'code-block'],
+		                    ['clean']
+		                ],
+		                handlers: {
+		                    'image': function() {
+		                        const uploadType = type === 'news' ? 'news-image' : 'announcement-image';
+		                        selectLocalImage(uploadType, type);
+		                    },
+		                    'attachment': function() {
+		                        uploadAttachmentForEditor(type);
+		                    },
+		                    'video': function() { // 添加视频上传处理器
+		                        uploadVideoForEditor(type);
+		                    }
+		                }
+		            },
+		            // 允许video标签
+		            clipboard: {
+		                matchVisual: false
+		            }
+		        },
+		        formats: ['bold', 'italic', 'underline', 'strike', 'video', 'image', 'link', 'background', 'color', 'header', 'list', 'align', 'blockquote', 'code-block'],
+		        placeholder: '请输入内容...'
+		    });
+		    
+		    // 监听编辑器内容变化
+		    const contentFieldId = type === 'news' ? '#editContent' : '#editAnnouncementContent';
+		    editor.on('text-change', function() {
+		        $(contentFieldId).val(editor.root.innerHTML);
+		    });
+		    
+		    return editor;
+		}
+        
+     // 编辑器附件上传函数
+        function uploadAttachmentForEditor(type) {
+		    const input = document.createElement('input');
+		    input.setAttribute('type', 'file');
+		    input.setAttribute('accept', '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.zip,.rar');
+		    input.click();
+		    
+		    input.onchange = function() {
+		        const file = input.files[0];
+		        if (!file) return;
+		        
+		        // 验证文件类型
+		        const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'zip', 'rar'];
+		        const fileName = file.name.toLowerCase();
+		        const isValid = allowedExtensions.some(ext => fileName.endsWith('.' + ext));
+		        
+		        if (!isValid) {
+		            alert('不支持的文件类型，请选择PDF、Word、Excel、PPT、TXT或压缩文件');
+		            return;
+		        }
+		        
+		        // 验证文件大小（10MB）
+		        if (file.size > 10 * 1024 * 1024) {
+		            alert('文件大小不能超过10MB');
+		            return;
+		        }
+		        
+		        // 获取当前编辑器实例
+		        const editor = (type === 'news') ? newsEditor : announcementEditor;
+		        if (!editor) return;
+		        
+		        // 获取当前光标位置
+		        const range = editor.getSelection(true);
+		        
+		        // 显示上传进度模态框
+		        const progressModal = new bootstrap.Modal(document.getElementById('uploadProgressModal'));
+		        $('#uploadProgressBar').css('width', '0%');
+		        $('#uploadStatus').text('正在上传附件...');
+		        $('#uploadError').addClass('d-none');
+		        progressModal.show();
+		        
+		        const formData = new FormData();
+		        formData.append('file', file);
+		        
+		        const xhr = new XMLHttpRequest();
+		        const uploadType = type === 'news' ? 'news-attachment' : 'announcement-attachment';
+		        
+		        // 上传进度事件
+		        xhr.upload.addEventListener('progress', function(e) {
+		            if (e.lengthComputable) {
+		                const percentComplete = (e.loaded / e.total) * 100;
+		                $('#uploadProgressBar').css('width', percentComplete + '%');
+		                $('#uploadStatus').text(`上传中: ${Math.round(percentComplete)}%`);
+		            }
+		        });
+		        
+		        // 上传完成事件
+		        xhr.onload = function() {
+		            if (xhr.status === 200) {
+		                const response = JSON.parse(xhr.responseText);
+		                if (response.code === 200) {
+		                    $('#uploadStatus').text('上传成功！');
+		                    $('#uploadProgressBar').css('width', '100%');
+		                    
+		                    // 获取文件图标和大小
+		                    const fileExtension = file.name.split('.').pop().toLowerCase();
+		                    const iconClass = getFileIconClass(fileExtension);
+		                    const fileSize = formatFileSize(file.size);
+		                    
+		                    // 构建附件HTML
+		                    const attachmentHtml = `
+		                        <div class="editor-attachment">
+		                            <i class="${iconClass} me-2"></i>
+		                            <a href="${response.data.url}" target="_blank" style="text-decoration: none; font-weight: 500;">
+		                                ${file.name}
+		                            </a>
+		                            <span style="color: #6c757d; font-size: 0.9em; margin-left: 10px;">(${fileSize})</span>
+		                        </div>
+		                    `;
+		                    
+		                    // 插入附件到编辑器
+		                    editor.clipboard.dangerouslyPasteHTML(range.index, attachmentHtml);
+		                    
+		                    // 延迟关闭模态框
+		                    setTimeout(() => {
+		                        progressModal.hide();
+		                    }, 500);
+		                } else {
+		                    $('#uploadError').text('上传失败: ' + response.message).removeClass('d-none');
+		                    $('#uploadStatus').text('上传失败');
+		                }
+		            } else {
+		                $('#uploadError').text('上传失败，请检查网络连接').removeClass('d-none');
+		                $('#uploadStatus').text('上传失败');
+		            }
+		        };
+		        
+		        // 上传错误事件
+		        xhr.onerror = function() {
+		            $('#uploadError').text('网络错误，请检查连接').removeClass('d-none');
+		            $('#uploadStatus').text('上传失败');
+		        };
+		        
+		        // 开始上传
+		        xhr.open('POST', `${uploadApiUrl}/${uploadType}`, true);
+		        xhr.send(formData);
+		    };
+		}
+
+
+        // 文件大小格式化函数
+        function formatFileSize(bytes) {
+		    if (bytes === 0) return '0 Bytes';
+		    const k = 1024;
+		    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+		    const i = Math.floor(Math.log(bytes) / Math.log(k));
+		    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+		}
+        
+     // 选择本地图片
+        function selectLocalImage(uploadType, pageType) {
+		    const input = document.createElement('input');
+		    input.setAttribute('type', 'file');
+		    input.setAttribute('accept', 'image/*');
+		    input.click();
+		    
+		    input.onchange = async function() {
+		        const file = input.files[0];
+		        if (!file) return;
+		        
+		        // 验证文件类型
+		        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg', 'image/webp'];
+		        if (!allowedTypes.includes(file.type)) {
+		            alert('请选择图片文件（JPG、PNG、GIF、WebP）');
+		            return;
+		        }
+		        
+		        // 验证文件大小（5MB）
+		        if (file.size > 5 * 1024 * 1024) {
+		            alert('图片大小不能超过5MB');
+		            return;
+		        }
+		        
+		        try {
+		            // 获取当前编辑器实例
+		            const editor = pageType === 'news' ? newsEditor : announcementEditor;
+		            if (!editor) {
+		                alert('编辑器未初始化');
+		                return;
+		            }
+		            
+		            // 获取当前光标位置
+		            const range = editor.getSelection();
+		            if (!range) {
+		                alert('请先点击编辑器选择插入位置');
+		                return;
+		            }
+		            
+		            // 显示上传进度模态框
+		            const progressModal = new bootstrap.Modal(document.getElementById('uploadProgressModal'));
+		            $('#uploadProgressBar').css('width', '0%');
+		            $('#uploadStatus').text('正在上传图片...');
+		            $('#uploadError').addClass('d-none');
+		            progressModal.show();
+		            
+		            // 上传图片
+		            const imageUrl = await uploadImageToServer(file, uploadType);
+		            
+		            // 插入图片到编辑器
+		            if (imageUrl) {
+		                editor.insertEmbed(range.index, 'image', imageUrl);
+		                $('#uploadStatus').text('上传成功！');
+		                $('#uploadProgressBar').css('width', '100%');
+		                
+		                // 延迟关闭模态框
+		                setTimeout(() => {
+		                    progressModal.hide();
+		                }, 500);
+		            }
+		        } catch (error) {
+		            console.error('上传图片失败:', error);
+		            $('#uploadError').text('上传失败: ' + error.message).removeClass('d-none');
+		            $('#uploadStatus').text('上传失败');
+		        }
+		    };
+		}
+
+        // 上传图片到服务器的函数
+        function uploadImageToServer(file, type) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const xhr = new XMLHttpRequest();
+                
+                // 上传进度事件
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        $('#uploadProgressBar').css('width', percentComplete + '%');
+                        $('#uploadStatus').text(`上传中: ${Math.round(percentComplete)}%`);
+                    }
+                });
+                
+                // 上传完成事件
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.code === 200) {
+                            resolve(response.data.url);
+                        } else {
+                            reject(new Error(response.message || '上传失败'));
+                        }
+                    } else {
+                        reject(new Error('上传失败，服务器返回状态: ' + xhr.status));
+                    }
+                };
+                
+                // 上传错误事件
+                xhr.onerror = function() {
+                    reject(new Error('网络错误，请检查连接'));
+                };
+                
+                // 设置超时
+                xhr.timeout = 30000; // 30秒超时
+                xhr.ontimeout = function() {
+                    reject(new Error('上传超时，请稍后重试'));
+                };
+                
+                // 开始上传
+                xhr.open('POST', `${uploadApiUrl}/${type}`, true);
+                xhr.send(formData);
+            });
+        }
+        
+        // 图片上传函数
+        function uploadImage(file, type) {
+            return new Promise((resolve, reject) => {
+                // 显示上传进度模态框
+                const progressModal = new bootstrap.Modal(document.getElementById('uploadProgressModal'));
+                $('#uploadProgressBar').css('width', '0%');
+                $('#uploadStatus').text('正在上传图片...');
+                $('#uploadError').addClass('d-none');
+                progressModal.show();
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const xhr = new XMLHttpRequest();
+                
+                // 上传进度事件
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        $('#uploadProgressBar').css('width', percentComplete + '%');
+                        $('#uploadStatus').text(`上传中: ${Math.round(percentComplete)}%`);
+                    }
+                });
+                
+                // 上传完成事件
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.code === 200) {
+                            $('#uploadStatus').text('上传成功！');
+                            $('#uploadProgressBar').css('width', '100%');
+                            
+                            // 延迟关闭模态框并返回结果
+                            setTimeout(() => {
+                                progressModal.hide();
+                                resolve(response.data.url);
+                            }, 500);
+                        } else {
+                            $('#uploadError').text('上传失败: ' + response.message).removeClass('d-none');
+                            $('#uploadStatus').text('上传失败');
+                            reject(new Error(response.message));
+                        }
+                    } else {
+                        $('#uploadError').text('上传失败，请检查网络连接').removeClass('d-none');
+                        $('#uploadStatus').text('上传失败');
+                        reject(new Error('上传失败'));
+                    }
+                };
+                
+                // 上传错误事件
+                xhr.onerror = function() {
+                    $('#uploadError').text('网络错误，请检查连接').removeClass('d-none');
+                    $('#uploadStatus').text('上传失败');
+                    reject(new Error('网络错误'));
+                };
+                
+                // 开始上传
+                xhr.open('POST', `${uploadApiUrl}/${type}`, true);
+                xhr.send(formData);
+            });
+        }
+        
+        // 初始化日期选择器
+        function initDatePickers() {
+            const today = new Date();
+            const lastMonth = new Date();
+            lastMonth.setMonth(today.getMonth() - 1);
+            
+            // 默认显示最近一个月的记录
+            $('#startDate').val(formatDateInput(lastMonth));
+            $('#endDate').val(formatDateInput(today));
+        }
+        
+        // 刷新列表
+        function refreshList() {
+            loadAnnouncementList(1);
+            loadStatistics();
+        }
+        
+        // 导出数据
+        function exportData() {
+            alert('导出功能开发中...');
+        }
+        
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = '../../login.html';
+            }
+        }
+        
+        // 加载统计数据
+        function loadStatistics() {
+            $.ajax({
+                url: apiBaseUrl + '/stats',
+                type: 'GET',
+                success: function(result) {
+                    if (result.code === 200) {
+                        const stats = result.data;
+                        $('#totalAnnouncements').text(stats.total || 0);
+                        $('#publishedAnnouncements').text(stats.published || 0);
+                        $('#topAnnouncements').text(stats.topCount || 0);
+                        $('#activeAnnouncements').text(stats.activeCount || 0);
+                    } else {
+                        console.error('加载统计失败:', result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('加载统计失败:', error);
+                    // 如果API调用失败，显示0
+                    $('#totalAnnouncements').text('0');
+                    $('#publishedAnnouncements').text('0');
+                    $('#topAnnouncements').text('0');
+                    $('#activeAnnouncements').text('0');
+                }
+            });
+        }
+        
+        // 加载公告列表
+        function loadAnnouncementList(page) {
+            currentPage = page;
+            
+            // 显示加载状态
+            $('#loadingState').show();
+            $('#emptyState').hide();
+            $('#announcementTableBody').empty();
+            
+            // 构建查询参数
+            const params = {
+                page: page,
+                pageSize: pageSize,
+                keyword: $('#searchKeyword').val(),
+                type: $('#filterType').val(),
+                status: $('#filterStatus').val(),
+                priority: $('#filterPriority').val(),
+                journal: $('#filterJournal').val(),
+                top: $('#filterTop').val(),
+                effective: $('#filterEffective').val(),
+                startDate: $('#startDate').val(),
+                endDate: $('#endDate').val()
+            };
+            
+            // 移除空参数
+            Object.keys(params).forEach(key => {
+                if (!params[key] && params[key] !== 0) {
+                    delete params[key];
+                }
+            });
+            
+            // 发送请求
+            $.ajax({
+                url: apiBaseUrl + '/list',
+                type: 'GET',
+                data: params,
+                success: function(result) {
+                    $('#loadingState').hide();
+                    
+                    if (result.code === 200) {
+                        const data = result.data;
+                        if (data.data && data.data.length > 0) {
+                            renderAnnouncementList(data.data);
+                            $('#totalCount').text(data.total);
+                            updatePagination(data.total);
+                        } else {
+                            showEmptyState();
+                        }
+                    } else {
+                        showEmptyState();
+                        console.log('加载失败: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loadingState').hide();
+                    showEmptyState();
+                    console.error('加载失败:', error);
+                    alert('加载失败，请检查网络连接或API是否正常');
+                }
+            });
+        }
+        
+        // 显示空状态
+        function showEmptyState() {
+            $('#emptyState').show();
+            $('#totalCount').text('0');
+            renderPagination(0);
+        }
+        
+        // 渲染公告列表
+        function renderAnnouncementList(data) {
+            const tbody = $('#announcementTableBody');
+            tbody.empty();
+            
+            data.forEach(function(item) {
+                const row = createAnnouncementRow(item);
+                tbody.append(row);
+            });
+        }
+        
+        // 创建公告行
+        function createAnnouncementRow(item) {
+            // 格式化日期
+            const publishDate = formatDateTime(item.publishDate);
+            const effectiveDate = item.effectiveDate ? formatDate(item.effectiveDate) : '-';
+            const expireDate = item.expireDate ? formatDate(item.expireDate) : '-';
+            
+            // 获取标签
+            const typeBadge = getTypeBadge(item.announcementType);
+            const statusBadge = getStatusBadge(item.publishStatus);
+            const topBadge = item.isTop == 1 ? '<span class="badge badge-top">置顶</span>' : '';
+            const priorityBadge = `<span class="badge ${getPriorityClass(item.priority)}">${item.priority}</span>`;
+            
+            // 操作按钮
+            let actionButtons = `
+                <button class="btn btn-sm btn-info" onclick="showDetail(${item.id})" title="查看详情">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-warning" onclick="editAnnouncement(${item.id})" title="编辑">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="showDeleteConfirm(${item.id})" title="删除">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            
+            // 置顶/取消置顶按钮
+            if (item.isTop == 0) {
+                actionButtons += `
+                    <button class="btn btn-sm btn-success" onclick="toggleTop(${item.id}, 1)" title="置顶">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                `;
+            } else {
+                actionButtons += `
+                    <button class="btn btn-sm btn-secondary" onclick="toggleTop(${item.id}, 0)" title="取消置顶">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                `;
+            }
+            
+            // 发布按钮（只有草稿状态显示）
+            if (item.publishStatus === 'Draft') {
+                actionButtons += `
+                    <button class="btn btn-sm btn-primary" onclick="publishAnnouncement(${item.id})" title="发布">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                `;
+            }
+            
+            return `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>
+                        <strong class="d-block">${item.title}</strong>
+                        <small class="text-muted">关联期刊：${item.journalName || '全部期刊'}</small>
+                    </td>
+                    <td>${typeBadge}</td>
+                    <td>${topBadge}</td>
+                    <td>${priorityBadge}</td>
+                    <td>${statusBadge}</td>
+                    <td>${publishDate}</td>
+                    <td>${effectiveDate} ~ ${expireDate}</td>
+                    <td><i class="fas fa-eye"></i> ${item.viewCount || 0}</td>
+                    <td class="action-buttons">${actionButtons}</td>
+                </tr>
+            `;
+        }
+        
+        // 显示公告详情
+        function showDetail(id) {
+            $.ajax({
+                url: apiBaseUrl + '/detail/' + id,
+                type: 'GET',
+                success: function(result) {
+                    if (result.code === 200) {
+                        const announcement = result.data;
+                        
+                        $('#detailTitle').text(announcement.title);
+                        $('#detailContent').html(announcement.content);
+                        $('#detailType').text(getTypeText(announcement.announcementType));
+                        $('#detailJournal').text(announcement.journalName || '全部期刊');
+                        $('#detailStatus').text(getStatusText(announcement.publishStatus));
+                        $('#detailTop').text(announcement.isTop == 1 ? '是' : '否');
+                        $('#detailPriority').text(announcement.priority);
+                        $('#detailPublishDate').text(formatDateTime(announcement.publishDate));
+                        $('#detailEffectiveDate').text(announcement.effectiveDate ? formatDate(announcement.effectiveDate) : '-');
+                        $('#detailExpireDate').text(announcement.expireDate ? formatDate(announcement.expireDate) : '-');
+                        $('#detailViewCount').text(announcement.viewCount);
+                        
+                        if (announcement.attachmentPath) {
+                            const fileName = announcement.attachmentPath.split('/').pop();
+                            $('#detailAttachment').html(`
+                                <a href="#" onclick="downloadFile('${announcement.attachmentPath}')" class="text-decoration-none">
+                                    <i class="fas fa-paperclip"></i> ${fileName}
+                                </a>
+                            `);
+                        } else {
+                            $('#detailAttachment').text('无');
+                        }
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+                        modal.show();
+                    } else {
+                        alert('获取详情失败: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('获取详情失败:', error);
+                    alert('获取详情失败，请稍后重试');
+                }
+            });
+        }
+        
+        // 编辑公告
+        function editAnnouncement(id) {
+            $.ajax({
+                url: apiBaseUrl + '/detail/' + id,
+                type: 'GET',
+                success: function(result) {
+                    if (result.code === 200) {
+                        const announcement = result.data;
+                        
+                        // 填充表单
+                        $('#editAnnouncementId').val(announcement.id);
+                        $('#editTitle').val(announcement.title);
+                        
+                        // 设置富文本编辑器内容
+                        if (announcementEditor) {
+                            announcementEditor.root.innerHTML = announcement.content || '';
+                            $('#editContent').val(announcement.content || '');
+                        }
+                        
+                        $('#editAnnouncementType').val(announcement.announcementType);
+                        $('#editPublishStatus').val(announcement.publishStatus);
+                        $('#editRelatedJournalId').val(announcement.relatedJournalId || '');
+                        $('#editPriority').val(announcement.priority);
+                        $('#editIsTop').val(announcement.isTop);
+                        $('#editEffectiveDate').val(announcement.effectiveDate ? formatDateInput(announcement.effectiveDate) : '');
+                        $('#editExpireDate').val(announcement.expireDate ? formatDateInput(announcement.expireDate) : '');
+                        $('#editScheduleTime').val(announcement.scheduleTime ? formatDateTimeLocal(announcement.scheduleTime) : '');
+                        $('#editAttachmentPath').val(announcement.attachmentPath || '');
+                        
+                        // 设置模态框标题
+                        $('#editModal .modal-title').text('编辑公告 - ID: ' + announcement.id);
+                        
+                        // 显示模态框
+                        const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                        modal.show();
+                        
+                        // 模态框显示后聚焦到标题
+                        setTimeout(() => {
+                            $('#editTitle').focus();
+                        }, 500);
+                    } else {
+                        alert('获取公告信息失败: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('获取公告信息失败:', error);
+                    alert('获取公告信息失败，请稍后重试');
+                }
+            });
+        }
+        
+        // 添加公告
+        function addAnnouncement() {
+            // 清空表单
+            $('#editAnnouncementForm')[0].reset();
+            $('#editAnnouncementId').val('');
+            
+            // 清空富文本编辑器
+            if (announcementEditor) {
+                announcementEditor.root.innerHTML = '';
+                $('#editContent').val('');
+            }
+            
+            $('#editPublishStatus').val('Draft');
+            $('#editIsTop').val('0');
+            $('#editPriority').val('3');
+            $('#editAnnouncementType').val('JOURNAL_INFO');
+            $('#editRelatedJournalId').val('');
+            $('#editEffectiveDate').val('');
+            $('#editExpireDate').val('');
+            $('#editScheduleTime').val('');
+            $('#editAttachmentPath').val('');
+            
+            // 设置模态框标题
+            $('#editModal .modal-title').text('添加新公告');
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('editModal'));
+            modal.show();
+            
+            // 模态框显示后聚焦到标题
+            setTimeout(() => {
+                $('#editTitle').focus();
+            }, 500);
+        }
+        
+        // 提交公告表单
+        function submitAnnouncementForm() {
+            const announcementId = $('#editAnnouncementId').val();
+            const isEdit = announcementId !== '';
+            
+            // 验证必填字段
+            if (!$('#editTitle').val().trim()) {
+                alert('请输入标题');
+                $('#editTitle').focus();
+                return;
+            }
+            
+            // 获取富文本编辑器内容
+            const content = announcementEditor ? announcementEditor.root.innerHTML : $('#editContent').val();
+            if (!content || content.trim() === '' || content.trim() === '<p><br></p>') {
+                alert('请输入内容');
+                if (announcementEditor) announcementEditor.focus();
+                return;
+            }
+            
+            // 构建公告数据
+            const announcementData = {
+                title: $('#editTitle').val().trim(),
+                content: content,
+                announcementType: $('#editAnnouncementType').val(),
+                publishStatus: $('#editPublishStatus').val(),
+                priority: parseInt($('#editPriority').val()),
+                isTop: parseInt($('#editIsTop').val())
+            };
+            
+            // 可空字段
+            const relatedJournalId = $('#editRelatedJournalId').val();
+            const attachmentPath = $('#editAttachmentPath').val().trim();
+            const effectiveDate = $('#editEffectiveDate').val();
+            const expireDate = $('#editExpireDate').val();
+            const scheduleTime = $('#editScheduleTime').val();
+            
+            if (relatedJournalId) announcementData.relatedJournalId = parseInt(relatedJournalId);
+            if (attachmentPath) announcementData.attachmentPath = attachmentPath;
+            if (effectiveDate) announcementData.effectiveDate = effectiveDate + ' 00:00:00';
+            if (expireDate) announcementData.expireDate = expireDate + ' 00:00:00';
+            if (scheduleTime) announcementData.scheduleTime = scheduleTime + ':00';
+            
+            // 如果是编辑，添加ID
+            if (isEdit) {
+                announcementData.id = parseInt(announcementId);
+            }
+            
+            // 发送请求
+            const url = isEdit ? apiBaseUrl + '/update' : apiBaseUrl + '/add';
+            const method = 'POST';
+            
+            console.log('提交数据:', JSON.stringify(announcementData));
+            
+            // 显示保存中提示
+            const submitBtn = $('#editAnnouncementForm button[type="submit"]');
+            const originalText = submitBtn.html();
+            submitBtn.html('<i class="fas fa-spinner fa-spin"></i> 保存中...').prop('disabled', true);
+            
+            $.ajax({
+                url: url,
+                type: method,
+                contentType: 'application/json',
+                data: JSON.stringify(announcementData),
+                success: function(result) {
+                    submitBtn.html(originalText).prop('disabled', false);
+                    
+                    console.log('响应结果:', result);
+                    if (result.code === 200) {
+                        alert(isEdit ? '公告更新成功！' : '公告添加成功！');
+                        $('#editModal').modal('hide');
+                        
+                        // 刷新列表和统计
+                        loadAnnouncementList(currentPage);
+                        loadStatistics();
+                    } else {
+                        alert('操作失败: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    submitBtn.html(originalText).prop('disabled', false);
+                    
+                    console.error('提交失败:', error);
+                    console.error('响应状态:', xhr.status);
+                    console.error('响应文本:', xhr.responseText);
+                    alert('提交失败，请检查网络连接或查看控制台错误信息');
+                }
+            });
+        }
+        
+        // 发布公告
+        function publishAnnouncement(id) {
+            if (confirm('确定要发布这条公告吗？')) {
+                $.ajax({
+                    url: apiBaseUrl + '/publish/' + id,
+                    type: 'POST',
+                    success: function(result) {
+                        if (result.code === 200) {
+                            alert('发布成功！');
+                            loadAnnouncementList(currentPage);
+                            loadStatistics();
+                        } else {
+                            alert('发布失败: ' + result.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('发布失败:', error);
+                        alert('发布失败，请稍后重试');
+                    }
+                });
+            }
+        }
+        
+        // 切换置顶状态
+        function toggleTop(id, isTop) {
+            if (confirm(`确定要${isTop == 1 ? '置顶' : '取消置顶'}这条公告吗？`)) {
+                $.ajax({
+                    url: apiBaseUrl + '/toggle-top/' + id,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ isTop: isTop }),
+                    success: function(result) {
+                        if (result.code === 200) {
+                            alert(isTop == 1 ? '置顶成功！' : '取消置顶成功！');
+                            loadAnnouncementList(currentPage);
+                        } else {
+                            alert('操作失败: ' + result.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('操作失败:', error);
+                        alert('操作失败，请稍后重试');
+                    }
+                });
+            }
+        }
+        
+        // 显示删除确认
+        function showDeleteConfirm(id) {
+            deleteAnnouncementId = id;
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+        
+        // 确认删除
+        function confirmDelete() {
+            if (!deleteAnnouncementId) return;
+            
+            $.ajax({
+                url: apiBaseUrl + '/delete/' + deleteAnnouncementId,
+                type: 'DELETE',
+                success: function(result) {
+                    if (result.code === 200) {
+                        alert('删除成功！');
+                        $('#deleteModal').modal('hide');
+                        loadAnnouncementList(currentPage);
+                        loadStatistics();
+                    } else {
+                        alert('删除失败: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('删除失败:', error);
+                    alert('删除失败，请稍后重试');
+                }
+            });
+        }
+        
+        // 重置搜索条件
+        function resetSearch() {
+            $('#searchKeyword').val('');
+            $('#filterType').val('');
+            $('#filterStatus').val('');
+            $('#filterJournal').val('');
+            $('#filterTop').val('');
+            $('#filterPriority').val('');
+            $('#filterEffective').val('');
+            initDatePickers();
+            loadAnnouncementList(1);
+        }
+        
+        // 下载文件
+        function downloadFile(path) {
+            window.open('/download?path=' + encodeURIComponent(path), '_blank');
+        }
+        
+        // 更新分页
+        function updatePagination(total) {
+            totalItems = total;
+            renderPagination(total);
+        }
+        
+        // 渲染分页
+        function renderPagination(total) {
+            const totalPages = Math.ceil(total / pageSize);
+            const pagination = $('.pagination');
+            pagination.empty();
+            
+            if (totalPages <= 1) return;
+            
+            // 上一页
+            const prevDisabled = currentPage === 1 ? 'disabled' : '';
+            pagination.append(`
+                <li class="page-item ${prevDisabled}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+            
+            // 页码
+            const maxPagesToShow = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+            let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+            
+            if (endPage - startPage + 1 < maxPagesToShow) {
+                startPage = Math.max(1, endPage - maxPagesToShow + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const active = i === currentPage ? 'active' : '';
+                pagination.append(`
+                    <li class="page-item ${active}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>
+                `);
+            }
+            
+            // 下一页
+            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+            pagination.append(`
+                <li class="page-item ${nextDisabled}">
+                    <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            `);
+        }
+        
+        // 切换页面
+        function changePage(page) {
+            loadAnnouncementList(page);
+        }
+        
+        // ========== 辅助函数 ==========
+        
+        // 格式化日期为输入框格式 (YYYY-MM-DD)
+        function formatDateInput(date) {
+            if (!date) return '';
+            try {
+                const dateObj = date instanceof Date ? date : new Date(date);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            } catch (e) {
+                return '';
+            }
+        }
+        
+        // 格式化为datetime-local格式 (YYYY-MM-DDTHH:mm)
+        function formatDateTimeLocal(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            } catch (e) {
+                return '';
+            }
+        }
+        
+        // 格式化日期时间显示
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+        
+        // 格式化日期显示
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('zh-CN');
+            } catch (e) {
+                return dateString;
+            }
+        }
+        
+        // 获取类型标签
+        function getTypeBadge(type) {
+            const badges = {
+                'JOURNAL_INFO': {class: 'badge-journal-info', text: '期刊信息'},
+                'IMPACT_FACTOR': {class: 'badge-impact-factor', text: '影响因子'},
+                'POLICY_GUIDE': {class: 'badge-policy-guide', text: '政策指南'},
+                'IMPORTANT_NOTICE': {class: 'badge-important-notice', text: '重要通知'},
+                'OTHER': {class: 'badge-other', text: '其他'}
+            };
+            const badge = badges[type] || {class: 'badge-secondary', text: type};
+            return `<span class="badge ${badge.class}">${badge.text}</span>`;
+        }
+        
+        // 获取类型文本
+        function getTypeText(type) {
+            const texts = {
+                'JOURNAL_INFO': '期刊信息',
+                'IMPACT_FACTOR': '影响因子',
+                'POLICY_GUIDE': '政策指南',
+                'IMPORTANT_NOTICE': '重要通知',
+                'OTHER': '其他'
+            };
+            return texts[type] || type;
+        }
+        
+        // 获取状态标签
+        function getStatusBadge(status) {
+            const badges = {
+                'Published': {class: 'badge-published', text: '已发布'},
+                'Draft': {class: 'badge-draft', text: '草稿'},
+                'Scheduled': {class: 'badge-scheduled', text: '定时发布'}
+            };
+            const badge = badges[status] || {class: 'badge-draft', text: status};
+            return `<span class="badge ${badge.class}">${badge.text}</span>`;
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            const texts = {
+                'Published': '已发布',
+                'Draft': '草稿',
+                'Scheduled': '定时发布'
+            };
+            return texts[status] || status;
+        }
+        
+        // 获取优先级样式类
+        function getPriorityClass(priority) {
+            const classes = {
+                5: 'bg-danger text-white',
+                4: 'bg-warning text-dark',
+                3: 'bg-primary text-white',
+                2: 'bg-info text-white',
+                1: 'bg-secondary text-white'
+            };
+            return classes[priority] || 'bg-secondary text-white';
+        }
+        
+     // 添加附件上传函数
+        function uploadAttachment(type) {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf');
+            input.click();
+            
+            input.onchange = async function() {
+                const file = input.files[0];
+                if (!file) return;
+                
+                // 验证文件类型
+                const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf'];
+                const fileName = file.name.toLowerCase();
+                const isValid = allowedExtensions.some(ext => fileName.endsWith('.' + ext));
+                
+                if (!isValid) {
+                    alert('不支持的文件类型，请选择PDF、Word、Excel、PPT或TXT文件');
+                    return;
+                }
+                
+                // 验证文件大小（10MB）
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('文件大小不能超过10MB');
+                    return;
+                }
+                
+                // 显示上传进度模态框
+                const progressModal = new bootstrap.Modal(document.getElementById('uploadProgressModal'));
+                $('#uploadProgressBar').css('width', '0%');
+                $('#uploadStatus').text('正在上传附件...');
+                $('#uploadError').addClass('d-none');
+                progressModal.show();
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const xhr = new XMLHttpRequest();
+                const uploadType = type === 'news' ? 'news-attachment' : 'announcement-attachment';
+                
+                // 上传进度事件
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        $('#uploadProgressBar').css('width', percentComplete + '%');
+                        $('#uploadStatus').text(`上传中: ${Math.round(percentComplete)}%`);
+                    }
+                });
+                
+                // 上传完成事件
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.code === 200) {
+                            $('#uploadStatus').text('上传成功！');
+                            $('#uploadProgressBar').css('width', '100%');
+                            
+                            // 将附件路径填入输入框
+                            $('#editAttachmentPath').val(response.data.url);
+                            
+                            // 延迟关闭模态框
+                            setTimeout(() => {
+                                progressModal.hide();
+                                alert(`附件 "${response.data.name}" 上传成功！`);
+                            }, 500);
+                        } else {
+                            $('#uploadError').text('上传失败: ' + response.message).removeClass('d-none');
+                            $('#uploadStatus').text('上传失败');
+                        }
+                    } else {
+                        $('#uploadError').text('上传失败，请检查网络连接').removeClass('d-none');
+                        $('#uploadStatus').text('上传失败');
+                    }
+                };
+                
+                // 上传错误事件
+                xhr.onerror = function() {
+                    $('#uploadError').text('网络错误，请检查连接').removeClass('d-none');
+                    $('#uploadStatus').text('上传失败');
+                };
+                
+                // 开始上传
+                xhr.open('POST', `${uploadApiUrl}/${uploadType}`, true);
+                xhr.send(formData);
+            };
+        }
+
+        // 在 showDetail 函数中，修改附件显示部分
+        function showDetail(id) {
+            $.ajax({
+                url: apiBaseUrl + '/detail/' + id,
+                type: 'GET',
+                success: function(result) {
+                    if (result.code === 200) {
+                        const announcement = result.data;
+                        
+                        // ... 其他字段设置 ...
+                        
+                        if (announcement.attachmentPath) {
+                            const fileName = announcement.attachmentPath.split('/').pop();
+                            const fileExtension = fileName.split('.').pop().toLowerCase();
+                            const iconClass = getFileIconClass(fileExtension);
+                            
+                            $('#detailAttachment').html(`
+                                <div class="d-flex align-items-center">
+                                    <i class="${iconClass} fa-lg me-2"></i>
+                                    <div>
+                                        <div class="fw-semibold">${fileName}</div>
+                                        <div class="text-muted small">
+                                            <a href="#" onclick="downloadFile('${announcement.attachmentPath}')" 
+                                               class="text-decoration-none me-3">
+                                                <i class="fas fa-download"></i> 下载
+                                            </a>
+                                            <a href="#" onclick="previewFile('${announcement.attachmentPath}')" 
+                                               class="text-decoration-none">
+                                                <i class="fas fa-eye"></i> 预览
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+                        } else {
+                            $('#detailAttachment').text('无');
+                        }
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+                        modal.show();
+                    } else {
+                        alert('获取详情失败: ' + result.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('获取详情失败:', error);
+                    alert('获取详情失败，请稍后重试');
+                }
+            });
+        }
+
+        // 文件预览函数
+        function previewFile(url) {
+            const fileExtension = url.split('.').pop().toLowerCase();
+            
+            if (fileExtension === 'pdf') {
+                // PDF文件预览
+                window.open(url, '_blank');
+            } else if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+                // 图片预览
+                window.open(url, '_blank');
+            } else {
+                // 其他文件下载
+                downloadFile(url);
+            }
+        }
+
+        // 获取文件图标类
+        function getFileIconClass(extension) {
+		    const icons = {
+		        'pdf': 'fas fa-file-pdf text-danger',
+		        'doc': 'fas fa-file-word text-primary',
+		        'docx': 'fas fa-file-word text-primary',
+		        'xls': 'fas fa-file-excel text-success',
+		        'xlsx': 'fas fa-file-excel text-success',
+		        'ppt': 'fas fa-file-powerpoint text-warning',
+		        'pptx': 'fas fa-file-powerpoint text-warning',
+		        'txt': 'fas fa-file-alt text-secondary',
+		        'rtf': 'fas fa-file-alt text-secondary',
+		        'zip': 'fas fa-file-archive text-warning',
+		        'rar': 'fas fa-file-archive text-warning'
+		    };
+		    return icons[extension] || 'fas fa-file text-secondary';
+		}
+
+        // 文件下载函数
+        function downloadFile(url) {
+            // 创建一个隐藏的a标签进行下载
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = url.split('/').pop();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        
+        function uploadVideoForEditor(type) {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'video/*,.mp4,.avi,.mov,.wmv,.flv,.webm,.mkv,.mpg,.mpeg,.3gp');
+            input.click();
+            
+            input.onchange = function() {
+                const file = input.files[0];
+                if (!file) return;
+                
+                // 验证文件类型
+                const allowedExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'mpg', 'mpeg', '3gp'];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedExtensions.includes(fileExtension)) {
+                    alert('不支持的视频格式，请选择MP4、AVI、MOV等常见格式');
+                    return;
+                }
+                
+                // 验证文件大小（100MB）
+                if (file.size > 100 * 1024 * 1024) {
+                    alert('视频大小不能超过100MB');
+                    return;
+                }
+                
+                // 获取当前编辑器实例
+                const editor = announcementEditor; // 使用公告编辑器
+                if (!editor) {
+                    alert('编辑器未初始化');
+                    return;
+                }
+                
+                // 显示上传进度模态框
+                const progressModal = new bootstrap.Modal(document.getElementById('uploadProgressModal'));
+                $('#uploadProgressBar').css('width', '0%');
+                $('#uploadStatus').text('正在上传视频...');
+                $('#uploadError').addClass('d-none');
+                progressModal.show();
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const xhr = new XMLHttpRequest();
+                
+                // 使用现有的附件上传接口
+                const uploadType = 'announcement-attachment'; // 使用公告附件上传
+                
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        $('#uploadProgressBar').css('width', percentComplete + '%');
+                        $('#uploadStatus').text(`上传中: ${Math.round(percentComplete)}%`);
+                    }
+                });
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            console.log('上传响应:', response);
+                            
+                            if (response.code === 200) {
+                                $('#uploadStatus').text('上传成功！');
+                                $('#uploadProgressBar').css('width', '100%');
+                                
+                                // 获取视频URL
+                                let videoUrl = response.data.url;
+                                console.log('原始视频URL:', videoUrl);
+                                
+                                // 确保URL完整
+                                if (!videoUrl.startsWith('http')) {
+                                    videoUrl = window.location.origin + videoUrl;
+                                }
+                                
+                                console.log('完整视频URL:', videoUrl);
+                                
+                                // 获取当前光标位置
+                                const range = editor.getSelection();
+                                const position = range ? range.index : editor.getLength();
+                                
+                                // 方法1：使用insertEmbed插入视频（推荐）
+                                try {
+                                    console.log('尝试使用insertEmbed插入视频...');
+                                    editor.insertEmbed(position, 'video', videoUrl);
+                                    console.log('insertEmbed插入成功');
+                                } catch (e) {
+                                    console.log('insertEmbed失败，尝试其他方法:', e.message);
+                                    
+                                    // 方法2：使用自定义的video blot
+                                    try {
+                                        const Delta = Quill.import('delta');
+                                        editor.updateContents(new Delta()
+                                            .retain(position)
+                                            .insert({ video: videoUrl })
+                                        );
+                                        console.log('Delta方式插入成功');
+                                    } catch (e2) {
+                                        console.log('Delta方式失败，使用HTML方式:', e2.message);
+                                        
+                                        // 方法3：使用最简单的HTML
+                                        const videoHtml = `
+                                            <video class="ql-video" 
+                                                   controls 
+                                                   style="max-width: 100%; max-height: 400px; display: block;"
+                                                   preload="metadata"
+                                                   src="${videoUrl}">
+                                                您的浏览器不支持HTML5视频
+                                            </video>
+                                        `;
+                                        
+                                        editor.clipboard.dangerouslyPasteHTML(position, videoHtml);
+                                        console.log('HTML方式插入成功');
+                                    }
+                                }
+                                
+                                // 在视频后添加换行
+                                editor.insertText(position + 1, '\n\n');
+                                
+                                // 延迟关闭模态框
+                                setTimeout(() => {
+                                    progressModal.hide();
+                                    // 检查编辑器内容
+                                    console.log('最终编辑器HTML:', editor.root.innerHTML);
+                                    alert('视频已插入编辑器');
+                                }, 1000);
+                                
+                            } else {
+                                $('#uploadError').text('上传失败: ' + response.message).removeClass('d-none');
+                                $('#uploadStatus').text('上传失败');
+                            }
+                        } catch (e) {
+                            console.error('解析响应失败:', e);
+                            $('#uploadError').text('解析响应失败: ' + e.message).removeClass('d-none');
+                            $('#uploadStatus').text('上传失败');
+                        }
+                    } else {
+                        console.error('上传失败，状态码:', xhr.status);
+                        $('#uploadError').text('上传失败，服务器返回状态: ' + xhr.status).removeClass('d-none');
+                        $('#uploadStatus').text('上传失败');
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    console.error('上传网络错误');
+                    $('#uploadError').text('网络错误，请检查连接').removeClass('d-none');
+                    $('#uploadStatus').text('上传失败');
+                };
+                
+                xhr.timeout = 300000;
+                xhr.ontimeout = function() {
+                    console.error('上传超时');
+                    $('#uploadError').text('上传超时，请检查文件大小或网络连接').removeClass('d-none');
+                    $('#uploadStatus').text('上传超时');
+                };
+                
+                console.log('开始上传到:', `${uploadApiUrl}/${uploadType}`);
+                xhr.open('POST', `${uploadApiUrl}/${uploadType}`, true);
+                xhr.send(formData);
+            };
+        }
+        
+     // 获取视频MIME类型
+        function getVideoMimeType(extension) {
+            const mimeTypes = {
+                'mp4': 'video/mp4',
+                'avi': 'video/x-msvideo',
+                'mov': 'video/quicktime',
+                'wmv': 'video/x-ms-wmv',
+                'flv': 'video/x-flv',
+                'webm': 'video/webm',
+                'mkv': 'video/x-matroska',
+                'mpg': 'video/mpeg',
+                'mpeg': 'video/mpeg',
+                '3gp': 'video/3gpp'
+            };
+            
+            return mimeTypes[extension.toLowerCase()] || 'video/mp4';
+        }
+
+        // 文件大小格式化
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 获取文件图标类
+        function getFileIconClass(extension) {
+            const icons = {
+                'pdf': 'fas fa-file-pdf text-danger',
+                'doc': 'fas fa-file-word text-primary',
+                'docx': 'fas fa-file-word text-primary',
+                'xls': 'fas fa-file-excel text-success',
+                'xlsx': 'fas fa-file-excel text-success',
+                'ppt': 'fas fa-file-powerpoint text-warning',
+                'pptx': 'fas fa-file-powerpoint text-warning',
+                'txt': 'fas fa-file-alt text-secondary',
+                'rtf': 'fas fa-file-alt text-secondary',
+                'zip': 'fas fa-file-archive text-warning',
+                'rar': 'fas fa-file-archive text-warning'
+            };
+            return icons[extension.toLowerCase()] || 'fas fa-file text-secondary';
+        }
+    </script>
+</body>
+</html>

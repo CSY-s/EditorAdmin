@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bjfu.paper.mapper.JournalAnnouncementMapper">
+    
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.bjfu.paper.model.entity.JournalAnnouncement">
+        <id property="id" column="id" />
+        <result property="title" column="title" />
+        <result property="content" column="content" />
+        <result property="announcementType" column="announcement_type" />
+        <result property="effectiveDate" column="effective_date" />
+        <result property="expireDate" column="expire_date" />
+        <result property="priority" column="priority" />
+        <result property="publishDate" column="publish_date" />
+        <result property="publisherId" column="publisher_id" />
+        <result property="publishStatus" column="publish_status" />
+        <result property="scheduleTime" column="schedule_time" />
+        <result property="isTop" column="is_top" />
+        <result property="viewCount" column="view_count" />
+        <result property="attachmentPath" column="attachment_path" />
+        <result property="relatedJournalId" column="related_journal_id" />
+        <result property="createTime" column="create_time" />
+        <result property="updateTime" column="update_time" />
+        <!-- 关联字段 -->
+        <result property="publisherName" column="publisher_name" />
+        <result property="journalName" column="journal_name" />
+    </resultMap>
+    
+    <!-- 条件查询公告列表（带分页） -->
+    <select id="selectAnnouncementsByCondition" parameterType="java.util.Map" resultMap="BaseResultMap">
+        SELECT 
+            ja.*,
+            u.full_name as publisher_name,
+            j.name as journal_name
+        FROM journal_announcement ja
+        LEFT JOIN user u ON ja.publisher_id = u.user_id
+        LEFT JOIN journal j ON ja.related_journal_id = j.id
+        WHERE 1 = 1
+        
+        <!-- 关键词搜索 -->
+        <if test="keyword != null and keyword != ''">
+            AND (
+                ja.title LIKE CONCAT('%', #{keyword}, '%')
+                OR ja.content LIKE CONCAT('%', #{keyword}, '%')
+                OR u.full_name LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        
+        <!-- 公告类型筛选 -->
+        <if test="announcementType != null and announcementType != ''">
+            AND ja.announcement_type = #{announcementType}
+        </if>
+        
+        <!-- 发布状态筛选 -->
+        <if test="publishStatus != null and publishStatus != ''">
+            AND ja.publish_status = #{publishStatus}
+        </if>
+        
+        <!-- 是否置顶筛选 -->
+        <if test="isTop != null">
+            AND ja.is_top = #{isTop}
+        </if>
+        
+        <!-- 优先级筛选 -->
+        <if test="priority != null and priority != ''">
+            AND ja.priority = #{priority}
+        </if>
+        
+        <!-- 关联期刊筛选 -->
+        <if test="relatedJournalId != null and relatedJournalId != ''">
+            AND ja.related_journal_id = #{relatedJournalId}
+        </if>
+        
+        <!-- 有效状态筛选 -->
+        <if test="effectiveStatus != null and effectiveStatus != ''">
+            <choose>
+                <when test="effectiveStatus == 'active'">
+                    AND (ja.effective_date IS NULL OR ja.effective_date &lt;= CURDATE())
+                    AND (ja.expire_date IS NULL OR ja.expire_date &gt;= CURDATE())
+                </when>
+                <when test="effectiveStatus == 'expired'">
+                    AND ja.expire_date IS NOT NULL AND ja.expire_date &lt; CURDATE()
+                </when>
+                <when test="effectiveStatus == 'future'">
+                    AND ja.effective_date IS NOT NULL AND ja.effective_date &gt; CURDATE()
+                </when>
+            </choose>
+        </if>
+        
+        <!-- 日期范围筛选 -->
+        <if test="startDate != null and startDate != ''">
+            AND DATE(ja.publish_date) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(ja.publish_date) &lt;= #{endDate}
+        </if>
+        
+        <!-- 排序条件 -->
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                ORDER BY ja.is_top DESC, ja.priority DESC, ja.publish_date DESC
+            </otherwise>
+        </choose>
+        
+        <!-- 分页条件 -->
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+    
+    <!-- 统计条件查询数量 -->
+    <select id="countByCondition" parameterType="java.util.Map" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM journal_announcement ja
+        LEFT JOIN user u ON ja.publisher_id = u.user_id
+        LEFT JOIN journal j ON ja.related_journal_id = j.id
+        WHERE 1 = 1
+        
+        <if test="keyword != null and keyword != ''">
+            AND (
+                ja.title LIKE CONCAT('%', #{keyword}, '%')
+                OR ja.content LIKE CONCAT('%', #{keyword}, '%')
+                OR u.full_name LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        
+        <if test="announcementType != null and announcementType != ''">
+            AND ja.announcement_type = #{announcementType}
+        </if>
+        
+        <if test="publishStatus != null and publishStatus != ''">
+            AND ja.publish_status = #{publishStatus}
+        </if>
+        
+        <if test="isTop != null">
+            AND ja.is_top = #{isTop}
+        </if>
+        
+        <if test="priority != null and priority != ''">
+            AND ja.priority = #{priority}
+        </if>
+        
+        <if test="relatedJournalId != null and relatedJournalId != ''">
+            AND ja.related_journal_id = #{relatedJournalId}
+        </if>
+        
+        <if test="effectiveStatus != null and effectiveStatus != ''">
+            <choose>
+                <when test="effectiveStatus == 'active'">
+                    AND (ja.effective_date IS NULL OR ja.effective_date &lt;= CURDATE())
+                    AND (ja.expire_date IS NULL OR ja.expire_date &gt;= CURDATE())
+                </when>
+                <when test="effectiveStatus == 'expired'">
+                    AND ja.expire_date IS NOT NULL AND ja.expire_date &lt; CURDATE()
+                </when>
+                <when test="effectiveStatus == 'future'">
+                    AND ja.effective_date IS NOT NULL AND ja.effective_date &gt; CURDATE()
+                </when>
+            </choose>
+        </if>
+        
+        <if test="startDate != null and startDate != ''">
+            AND DATE(ja.publish_date) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(ja.publish_date) &lt;= #{endDate}
+        </if>
+    </select>
+    
+    <!-- 获取置顶公告列表 -->
+    <select id="selectTopAnnouncements" resultMap="BaseResultMap">
+        SELECT 
+            ja.*,
+            u.full_name as publisher_name,
+            j.name as journal_name
+        FROM journal_announcement ja
+        LEFT JOIN user u ON ja.publisher_id = u.user_id
+        LEFT JOIN journal j ON ja.related_journal_id = j.id
+        WHERE ja.is_top = 1 
+            AND ja.publish_status = 'Published'
+            AND (ja.effective_date IS NULL OR ja.effective_date &lt;= CURDATE())
+            AND (ja.expire_date IS NULL OR ja.expire_date &gt;= CURDATE())
+        ORDER BY ja.priority DESC, ja.publish_date DESC
+        LIMIT 10
+    </select>
+    
+    <!-- 根据ID获取公告详情（包含发布人姓名和期刊名称） -->
+    <select id="selectAnnouncementDetail" resultMap="BaseResultMap">
+        SELECT 
+            ja.*,
+            u.full_name as publisher_name,
+            j.name as journal_name
+        FROM journal_announcement ja
+        LEFT JOIN user u ON ja.publisher_id = u.user_id
+        LEFT JOIN journal j ON ja.related_journal_id = j.id
+        WHERE ja.id = #{id}
+    </select>
+    
+    <!-- 更新查看次数 -->
+    <update id="updateViewCount">
+        UPDATE journal_announcement 
+        SET view_count = view_count + #{count}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 批量更新状态 -->
+    <update id="batchUpdateStatus">
+        UPDATE journal_announcement 
+        SET publish_status = #{status}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+    
+    <!-- 批量删除 -->
+    <delete id="batchDelete">
+        DELETE FROM journal_announcement 
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <!-- 更新置顶状态 -->
+    <update id="updateTopStatus">
+        UPDATE journal_announcement 
+        SET is_top = #{isTop}
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 获取统计数据 -->
+    <select id="getStatistics" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN publish_status = 'Published' THEN 1 ELSE 0 END) as published,
+            SUM(CASE WHEN publish_status = 'Draft' THEN 1 ELSE 0 END) as draft,
+            SUM(CASE WHEN publish_status = 'Scheduled' THEN 1 ELSE 0 END) as scheduled,
+            SUM(CASE WHEN is_top = 1 THEN 1 ELSE 0 END) as topCount,
+            SUM(CASE WHEN 
+                (effective_date IS NULL OR effective_date &lt;= CURDATE())
+                AND (expire_date IS NULL OR expire_date &gt;= CURDATE())
+                THEN 1 ELSE 0 END) as activeCount,
+            SUM(CASE WHEN announcement_type = 'JOURNAL_INFO' THEN 1 ELSE 0 END) as journalInfoCount,
+            SUM(CASE WHEN announcement_type = 'IMPACT_FACTOR' THEN 1 ELSE 0 END) as impactFactorCount,
+            SUM(CASE WHEN announcement_type = 'POLICY_GUIDE' THEN 1 ELSE 0 END) as policyGuideCount,
+            SUM(CASE WHEN announcement_type = 'IMPORTANT_NOTICE' THEN 1 ELSE 0 END) as importantNoticeCount,
+            SUM(CASE WHEN announcement_type = 'OTHER' THEN 1 ELSE 0 END) as otherCount
+        FROM journal_announcement
+    </select>
+    
+    <!-- 获取有效公告数量 -->
+    <select id="countActiveAnnouncements" resultType="java.lang.Integer">
+        SELECT COUNT(*) 
+        FROM journal_announcement 
+        WHERE publish_status = 'Published'
+            AND (effective_date IS NULL OR effective_date &lt;= CURDATE())
+            AND (expire_date IS NULL OR expire_date &gt;= CURDATE())
+    </select>
+    
+    <!-- 根据类型统计数量 -->
+    <select id="countByType" resultType="java.util.Map">
+        SELECT 
+            announcement_type as type,
+            COUNT(*) as count
+        FROM journal_announcement 
+        WHERE publish_status = 'Published'
+        GROUP BY announcement_type
+    </select>
+    
+    <select id="getTypeStatistics" resultType="java.util.Map">
+	    SELECT 
+	        announcement_type as type,
+	        COUNT(*) as count
+	    FROM journal_announcement 
+	    WHERE publish_status = 'Published'
+	    GROUP BY announcement_type
+	</select>
+</mapper>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bjfu.paper.mapper.NewsMapper">
+    
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.bjfu.paper.model.entity.News">
+        <id property="id" column="id" />
+        <result property="title" column="title" />
+        <result property="content" column="content" />
+        <result property="publishDate" column="publish_date" />
+        <result property="publisherId" column="publisher_id" />
+        <result property="isNotice" column="is_notice" />
+        <result property="attachmentPath" column="attachment_path" />
+        <result property="publishStatus" column="publish_status" />
+        <result property="scheduleTime" column="schedule_time" />
+        <result property="newsType" column="news_type" />
+    </resultMap>
+    
+    <!-- 新增新闻 -->
+    <insert id="insertNews" parameterType="com.bjfu.paper.model.entity.News" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO news (
+            title, 
+            content, 
+            publish_date, 
+            publisher_id, 
+            is_notice, 
+            attachment_path, 
+            publish_status, 
+            schedule_time, 
+            news_type
+        ) VALUES (
+            #{title},
+            #{content},
+            #{publishDate},
+            #{publisherId},
+            #{isNotice},
+            #{attachmentPath},
+            #{publishStatus},
+            #{scheduleTime},
+            #{newsType}
+        )
+    </insert>
+    
+    <!-- 根据ID查询新闻 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT * FROM news WHERE id = #{id}
+    </select>
+    
+    <!-- 更新新闻 -->
+    <update id="updateNews" parameterType="com.bjfu.paper.model.entity.News">
+        UPDATE news
+        <set>
+            <if test="title != null and title != ''">
+                title = #{title},
+            </if>
+            <if test="content != null and content != ''">
+                content = #{content},
+            </if>
+            <if test="publishDate != null">
+                publish_date = #{publishDate},
+            </if>
+            <if test="publisherId != null">
+                publisher_id = #{publisherId},
+            </if>
+            <if test="isNotice != null">
+                is_notice = #{isNotice},
+            </if>
+            <if test="attachmentPath != null">
+                attachment_path = #{attachmentPath},
+            </if>
+            <if test="publishStatus != null and publishStatus != ''">
+                publish_status = #{publishStatus},
+            </if>
+            <if test="scheduleTime != null">
+                schedule_time = #{scheduleTime},
+            </if>
+            <if test="newsType != null and newsType != ''">
+                news_type = #{newsType},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除新闻 -->
+    <delete id="deleteNews" parameterType="java.lang.Long">
+        DELETE FROM news WHERE id = #{id}
+    </delete>
+    
+    <!-- 分页查询新闻（默认查询普通新闻） -->
+    <select id="selectNewsByPage" resultMap="BaseResultMap">
+        SELECT * FROM news 
+        WHERE is_notice = 0 
+        ORDER BY publish_date DESC 
+        LIMIT #{offset}, #{limit}
+    </select>
+    
+    <!-- 查询所有公告 -->
+    <select id="selectAllNotices" resultMap="BaseResultMap">
+        SELECT * FROM news 
+        WHERE is_notice = 1 
+        ORDER BY publish_date DESC
+    </select>
+    
+    <!-- 查询所有新闻（不分页） -->
+    <select id="selectAllNews" resultMap="BaseResultMap">
+        SELECT * FROM news 
+        ORDER BY publish_date DESC
+    </select>
+    
+    <!-- 统计新闻数量（普通新闻） -->
+    <select id="countNews" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM news WHERE is_notice = 0
+    </select>
+    
+    <!-- 条件查询新闻（支持分页） -->
+    <select id="selectNewsByCondition" parameterType="java.util.Map" resultMap="BaseResultMap">
+        SELECT * FROM news 
+        WHERE 1 = 1
+        <!-- 是否为公告 -->
+        <if test="isNotice != null">
+            AND is_notice = #{isNotice}
+        </if>
+        <!-- 关键词搜索 -->
+        <if test="keyword != null and keyword != ''">
+            AND (
+                title LIKE CONCAT('%', #{keyword}, '%')
+                OR content LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <!-- 发布状态 -->
+        <if test="publishStatus != null and publishStatus != ''">
+            AND publish_status = #{publishStatus}
+        </if>
+        <!-- 新闻类型 -->
+        <if test="newsType != null and newsType != ''">
+            AND news_type = #{newsType}
+        </if>
+        <!-- 排序条件 -->
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                ORDER BY publish_date DESC
+            </otherwise>
+        </choose>
+        <!-- 分页条件 -->
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+    
+    <!-- 条件统计数量 -->
+    <select id="countByCondition" parameterType="java.util.Map" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM news 
+        WHERE 1 = 1
+        <if test="isNotice != null">
+            AND is_notice = #{isNotice}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                title LIKE CONCAT('%', #{keyword}, '%')
+                OR content LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="publishStatus != null and publishStatus != ''">
+            AND publish_status = #{publishStatus}
+        </if>
+        <if test="newsType != null and newsType != ''">
+            AND news_type = #{newsType}
+        </if>
+    </select>
+    
+    <!-- 获取统计数据 -->
+    <select id="getStatistics" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN is_notice = 1 THEN 1 ELSE 0 END) as noticeCount,
+            SUM(CASE WHEN is_notice = 0 THEN 1 ELSE 0 END) as newsCount,
+            SUM(CASE WHEN publish_status = 'Published' THEN 1 ELSE 0 END) as publishedCount,
+            SUM(CASE WHEN publish_status = 'Draft' THEN 1 ELSE 0 END) as draftCount,
+            SUM(CASE WHEN publish_status = 'Scheduled' THEN 1 ELSE 0 END) as scheduledCount,
+            SUM(CASE WHEN news_type = 'CALL_FOR_PAPERS' THEN 1 ELSE 0 END) as callForPapersCount,
+            SUM(CASE WHEN news_type = 'REGULAR_NEWS' THEN 1 ELSE 0 END) as regularNewsCount,
+            SUM(CASE WHEN news_type = 'SPECIAL_ISSUE' THEN 1 ELSE 0 END) as specialIssueCount
+        FROM news
+    </select>
+    
+    <!-- 批量删除 -->
+    <delete id="batchDeleteNews" parameterType="java.util.List">
+        DELETE FROM news WHERE id IN 
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+</mapper>

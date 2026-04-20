@@ -1,0 +1,528 @@
+<!-- src/main/resources/static/back/editorialOffice/dashboard.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑部管理员工作台 - 科研论文投稿系统</title>
+    <!-- 改用CDN加载Bootstrap核心样式，避免本地路径问题 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <!-- 自定义业务样式（路径适配当前文件位置） -->
+    <link rel="stylesheet" href="css/editorial-office.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 页面专属样式（整合并优化） -->
+    <style>
+        /* 确保卡片高度一致并在小屏幕下有良好显示 */
+        .card {
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: -30px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #667eea;
+        }
+        
+        .timeline-content {
+            padding-left: 10px;
+        }
+        
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .card-body .fa-3x {
+                font-size: 2em;
+            }
+            
+            /* 小屏幕下统计卡片改为堆叠布局 */
+            .row > .col-xl-3, .row > .col-lg-3, .row > .col-md-6 {
+                margin-bottom: 15px;
+            }
+        }
+
+        /* 统计卡片样式优化，统一视觉效果 */
+        .stat-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card .card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .stat-card .btn {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/front/" style="position:fixed;right:24px;bottom:24px;z-index:1200;display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;background:#1f4f99;color:#fff;text-decoration:none;box-shadow:0 12px 24px rgba(31,79,153,.22);">
+        <i class="fas fa-globe"></i> 前台首页
+    </a>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div>
+                <h1><i class="fas fa-newspaper"></i> 编辑部管理员工作台</h1>
+                <p class="mb-0">《国际人工智能研究》期刊后台管理系统</p>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+                <div>
+                    <div id="userName">编辑部管理员</div>
+                    <button class="btn btn-sm btn-light mt-1" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> 退出
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="nav-menu">
+            <ul>
+                <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> 工作台</a></li>
+                <li><a href="tech_check.html"><i class="fas fa-clipboard-check"></i> 形式审查</a></li>
+                <li><a href="news_manage.html"><i class="fas fa-newspaper"></i> 新闻管理</a></li>
+                <li><a href="journal_notice.html"><i class="fas fa-bullhorn"></i> 公告管理</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> 系统设置</a></li>
+            </ul>
+        </nav>
+
+        <!-- 统计卡片 - 优化后的一行四列布局（适配响应式） -->
+        <div class="row mb-4">
+            <!-- 待审查稿件 -->
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
+                        <h3 id="pendingCheckCount" class="flex-grow-1">0</h3>
+                        <p class="text-muted">待审查稿件</p>
+                        <a href="tech_check.html" class="btn btn-primary btn-sm">立即处理</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 新闻总数 -->
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-newspaper fa-3x text-success mb-3"></i>
+                        <h3 id="newsCount" class="flex-grow-1">0</h3>
+                        <p class="text-muted">新闻总数</p>
+                        <a href="news_manage.html" class="btn btn-success btn-sm">管理新闻</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 公告总数 -->
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-bullhorn fa-3x text-warning mb-3"></i>
+                        <h3 id="noticeCount" class="flex-grow-1">0</h3>
+                        <p class="text-muted">公告总数</p>
+                        <a href="journal_notice.html" class="btn btn-warning btn-sm">管理公告</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 已审查稿件 -->
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4">
+                <div class="card stat-card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                        <h3 id="checkedCount" class="flex-grow-1">0</h3>
+                        <p class="text-muted">已审查稿件</p>
+                        <button class="btn btn-info btn-sm" onclick="viewReport()">查看报告</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快捷操作 + 系统通知 布局 -->
+        <div class="row">
+            <div class="col-md-4">
+                <!-- 快捷操作 -->
+                <div class="card mb-4 h-100">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bolt"></i> 快捷操作</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="location.href='tech_check.html'">
+                                <i class="fas fa-clipboard-check"></i> 形式审查
+                            </button>
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addNewsModal">
+                                <i class="fas fa-plus-circle"></i> 发布新闻
+                            </button>
+                            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#addNoticeModal">
+                                <i class="fas fa-bullhorn"></i> 发布公告
+                            </button>
+                            <button class="btn btn-info" onclick="location.href='news_manage.html'">
+                                <i class="fas fa-newspaper"></i> 新闻管理
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <!-- 系统通知 -->
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h3><i class="fas fa-bell"></i> 系统通知</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <small class="text-muted">今天 10:30</small>
+                                <p class="mb-1">新投稿：基于深度学习的图像识别算法优化</p>
+                            </div>
+                            <div class="list-group-item">
+                                <small class="text-muted">昨天 15:20</small>
+                                <p class="mb-1">3篇新闻草稿等待发布</p>
+                            </div>
+                            <div class="list-group-item">
+                                <small class="text-muted">前天 09:15</small>
+                                <p class="mb-1">系统维护通知：本周六凌晨2-4点</p>
+                            </div>
+                            <div class="list-group-item">
+                                <small class="text-muted">2025-11-28</small>
+                                <p class="mb-1">新增5篇待审查稿件，请及时处理</p>
+                            </div>
+                            <div class="list-group-item">
+                                <small class="text-muted">2025-11-27</small>
+                                <p class="mb-1">用户反馈：网站响应速度优化建议</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 近期活动 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3><i class="fas fa-history"></i> 近期活动</h3>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">今天 09:00</small>
+                            <p>审查通过稿件：MS-2025-012</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">昨天 16:30</small>
+                            <p>发布新闻：2026年Special Issue征稿通知</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">昨天 14:15</small>
+                            <p>更新期刊公告：投稿指南修订</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">昨天 11:00</small>
+                            <p>处理待审查稿件：MS-2025-015</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <small class="text-muted">前天 09:30</small>
+                            <p>发布系统公告：新版投稿系统上线</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 发布新闻模态框 -->
+    <div class="modal fade" id="addNewsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">快速发布新闻</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickNewsForm">
+                        <div class="form-group">
+                            <label>新闻标题</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label>新闻内容</label>
+                            <textarea class="form-control" name="content" rows="4" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="quickAddNews()">发布</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 发布公告模态框 -->
+    <div class="modal fade" id="addNoticeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">快速发布公告</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickNoticeForm">
+                        <div class="form-group">
+                            <label>公告标题</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label>公告内容</label>
+                            <textarea class="form-control" name="content" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-warning" onclick="quickAddNotice()">发布</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载核心JS依赖（CDN） -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+	    // 页面加载时获取数据
+	    $(document).ready(function() {
+	        loadDashboardData();
+	    });
+	
+	    // 加载仪表盘数据 - 修改为真实API调用
+	    function loadDashboardData() {
+	        // 1. 获取待审查稿件数量
+	        $.ajax({
+	            url: '/editorial-office/tech-check/stats',
+	            type: 'GET',
+	            success: function(response) {
+	                if (response.code === 200) {
+	                    $('#pendingCheckCount').text(response.data.pending || 0);
+	                    // 已审查数量 = 已通过 + 未通过
+	                    const checkedCount = (response.data.passed || 0) + (response.data.failed || 0);
+	                    $('#checkedCount').text(checkedCount);
+	                } else {
+	                    console.error('稿件统计API返回错误:', response);
+	                    // 降级处理：显示默认值
+	                    $('#pendingCheckCount').text('0');
+	                    $('#checkedCount').text('0');
+	                }
+	            },
+	            error: function(xhr, status, error) {
+	                console.error('获取稿件统计失败:', error);
+	                // 降级处理：显示默认值
+	                $('#pendingCheckCount').text('0');
+	                $('#checkedCount').text('0');
+	            }
+	        });
+	        
+	        // 2. 获取新闻总数
+	        $.ajax({
+	            url: '/editorial-office/news/stats',
+	            type: 'GET',
+	            success: function(response) {
+	                if (response.code === 200) {
+	                    $('#newsCount').text(response.data.total || 0);
+	                } else {
+	                    console.error('新闻统计API返回错误:', response);
+	                    $('#newsCount').text('0');
+	                }
+	            },
+	            error: function(xhr, status, error) {
+	                console.error('获取新闻统计失败:', error);
+	                $('#newsCount').text('0');
+	            }
+	        });
+	        
+	        // 3. 获取公告总数
+	        $.ajax({
+	            url: '/editorial-office/journal-announcement/stats',
+	            type: 'GET',
+	            success: function(response) {
+	                if (response.code === 200) {
+	                    $('#noticeCount').text(response.data.total || 0);
+	                } else {
+	                    console.error('公告统计API返回错误:', response);
+	                    $('#noticeCount').text('0');
+	                }
+	            },
+	            error: function(xhr, status, error) {
+	                console.error('获取公告统计失败:', error);
+	                $('#noticeCount').text('0');
+	            }
+	        });
+	    }
+	
+	    // 快速发布新闻
+	    function quickAddNews() {
+	        const title = $('#addNewsModal input[name="title"]').val();
+	        const content = $('#addNewsModal textarea[name="content"]').val();
+	        
+	        if (!title || !content) {
+	            alert('请填写完整信息');
+	            return;
+	        }
+	
+	        // 模拟API调用
+	        $.ajax({
+	            url: '/editorial-office/news/add',
+	            type: 'POST',
+	            contentType: 'application/json',
+	            data: JSON.stringify({
+	                title: title,
+	                content: content,
+	                isNotice: 0,
+	                publishStatus: 'Published',
+	                newsType: 'REGULAR_NEWS'
+	            }),
+	            success: function(response) {
+	                if (response.code === 200) {
+	                    alert('新闻发布成功');
+	                    $('#addNewsModal').modal('hide');
+	                    $('#quickNewsForm')[0].reset();
+	                    loadDashboardData(); // 刷新统计数据
+	                } else {
+	                    alert('发布失败: ' + response.message);
+	                }
+	            },
+	            error: function() {
+	                alert('网络错误，请稍后重试');
+	            }
+	        });
+	    }
+	
+	    // 快速发布公告
+	    function quickAddNotice() {
+	        const title = $('#quickNoticeForm input[name="title"]').val();
+	        const content = $('#quickNoticeForm textarea[name="content"]').val();
+	        
+	        if (!title || !content) {
+	            alert('请填写完整信息');
+	            return;
+	        }
+	
+	        // 模拟API调用
+	        $.ajax({
+	            url: '/editorial-office/journal-announcement/add',
+	            type: 'POST',
+	            contentType: 'application/json',
+	            data: JSON.stringify({
+	                title: title,
+	                content: content,
+	                publishStatus: 'Published',
+	                announcementType: 'IMPORTANT_NOTICE',
+	                priority: 3,
+	                isTop: 0
+	            }),
+	            success: function(response) {
+	                if (response.code === 200) {
+	                    alert('公告发布成功');
+	                    $('#addNoticeModal').modal('hide');
+	                    $('#quickNoticeForm')[0].reset();
+	                    loadDashboardData(); // 刷新统计数据
+	                } else {
+	                    alert('发布失败: ' + response.message);
+	                }
+	            },
+	            error: function() {
+	                alert('网络错误，请稍后重试');
+	            }
+	        });
+	    }
+	
+	    // 查看统计报告
+	    function viewReport() {
+	        alert('功能开发中...');
+	    }
+	
+	    // 退出登录
+	    function logout() {
+	        if (confirm('确定要退出登录吗？')) {
+	            // 调用退出API
+	            $.ajax({
+	                url: '/paper-system/logout',
+	                type: 'POST',
+	                success: function() {
+	                    window.location.href = '../../login.html';
+	                },
+	                error: function() {
+	                    // 降级处理：直接跳转登录页
+	                    window.location.href = '../../login.html';
+	                }
+	            });
+	        }
+	    }
+	
+	    // 定时刷新数据（每分钟）
+	    setInterval(function() {
+	        loadDashboardData();
+	    }, 60000);
+	</script>
+</body>
+</html>
