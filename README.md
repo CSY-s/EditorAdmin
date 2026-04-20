@@ -31,3 +31,17 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:5173/`.
+
+## Publish To GitHub
+
+This project lives in a non-ASCII local path, which can make `git push` unstable on some Windows setups.
+
+Use the helper script from the project root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1 -CommitMessage "your update message"
+```
+
+The script copies the safe project files to `C:\temp\EditorAdmin_upload`, commits there, and pushes to:
+
+`https://github.com/CSY-s/EditorAdmin.git`
